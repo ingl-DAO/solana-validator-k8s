@@ -24,7 +24,11 @@ data:
     exec agave-validator \
       --identity /keys/identity.json \
       --ledger /data/ledger \
+{{- if and .Values.persistence.enabled .Values.persistence.accounts.enabled }}
+      --accounts /accounts \
+{{- else }}
       --accounts /data/accounts \
+{{- end }}
       --snapshots /data/snapshots \
       --log - \
 {{- range $i := until 3 }}

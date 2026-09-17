@@ -87,6 +87,9 @@ spec:
 {{- end }}
         volumeMounts:
         - { name: data, mountPath: /data }
+{{- if and .Values.persistence.enabled .Values.persistence.accounts.enabled }}
+        - { name: accounts, mountPath: /accounts }
+{{- end }}
         - { name: flags, mountPath: /flags }
         - { name: probes, mountPath: /probes }
 {{- if eq .Values.mode "follower" }}
@@ -144,8 +147,17 @@ spec:
       storageClassName: {{ .Values.persistence.storageClassName | quote }}
       resources:
         requests:
-          # One PVC, not two. Anza says accounts and ledger belong on separate spindles; with a
-          # 200 GB quota and a 50 GB per-volume minimum, splitting costs 50 GB of quota for the
-          # privilege. Recorded in LIMITATIONS.md with the arithmetic.
           storage: {{ .Values.persistence.size }}
+{{- if .Values.persistence.accounts.enabled }}
+  # Separate volume for the accounts DB. Anza recommends accounts and ledger on separate
+  # spindles; the two have different IO profiles and contend badly when sharing one.
+  - metadata:
+      name: accounts
+    spec:
+      accessModes: {{- toYaml .Values.persistence.accessModes | nindent 8 }}
+      storageClassName: {{ .Values.persistence.storageClassName | quote }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.accounts.size }}
+{{- end }}
 {{- end }}

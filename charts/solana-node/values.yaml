@@ -49,8 +49,16 @@ persistence:
   enabled: true
   # Supplied by the infra layer. Never define a StorageClass in this chart.
   storageClassName: ""
-  size: 100Gi
   accessModes: ["ReadWriteOnce"]
+  # Ledger + snapshots. Sized so --limit-ledger-size 50000000 (the floor Agave permits, ~125 GB
+  # worst case with coding shreds) fits with room to spare, rather than being alert-managed.
+  size: 250Gi
+  accounts:
+    # Anza recommends accounts and ledger on separate spindles. Originally skipped because the
+    # quota was believed to be 200 GB; the real limit is 30 TB per AD, so it costs nothing to do
+    # the right thing here. See docs/decisions/0007 (corrected).
+    enabled: true
+    size: 100Gi
 
 # --- validator tuning -------------------------------------------------------------------------
 validator:

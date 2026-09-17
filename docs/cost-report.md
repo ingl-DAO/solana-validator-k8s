@@ -22,7 +22,7 @@ period, so burn will not track list-price arithmetic. Compare against the consol
 
 ## Modelled
 
-Shape: `VM.Standard.E4.Flex`, 6 OCPU / 64 GB. Storage at 730 hr/month.
+Shape: `VM.Standard.E5.Flex`, **8 OCPU / 96 GB** (ADR 0010 — E4 is unavailable in this tenancy). Storage at 730 hr/month.
 There is **no load balancer** in this architecture — the node runs on `hostNetwork`, which removes
 that line item entirely along with a category of cloud coupling.
 
@@ -30,33 +30,38 @@ that line item entirely along with a category of cloud coupling.
 
 | Line item | Unit price | Qty | Days | Total |
 |---|---|---|---|---|
-| E4.Flex OCPU | $0.025/OCPU-hr | 6 | 22 | $79.20 |
-| E4.Flex memory | $0.0015/GB-hr | 64 | 22 | $50.69 |
+| E5.Flex OCPU | $0.030/OCPU-hr | 8 | 22 | $126.72 |
+| E5.Flex memory | $0.002/GB-hr | 96 | 22 | $101.38 |
 | Boot volume, Balanced 10 VPU | $0.0425/GB-mo | 60 GB | 22 | $1.87 |
-| Ledger volume, Higher Perf 20 VPU | $0.0595/GB-mo | 100 GB | 22 | $4.36 |
+| Ledger volume, Higher Perf 20 VPU | $0.0595/GB-mo | 250 GB | 22 | $10.90 |
+| Accounts volume, Higher Perf 20 VPU | $0.0595/GB-mo | 100 GB | 22 | $4.36 |
 | OKE Basic control plane | $0 | 1 | 22 | $0.00 |
 | Egress | free < 10 TB/mo | — | — | $0.00 |
-| **Total** | | | | **$136.12** |
+| **Total** | | | | **$245.23** |
+
+**Variant A no longer fits the budget.** At the corrected shape it consumes essentially the entire
+€250. Scaling to zero between sessions is now load-bearing, not housekeeping.
 
 ### Variant B — scale the node pool to 0 between sessions — CHOSEN
 
 | Line item | Unit price | Qty | Hours | Total |
 |---|---|---|---|---|
-| Compute, 4 build sessions × 5 h | $0.246/hr | 1 node | 20 | $4.92 |
-| Compute, one deliberate 24 h soak | $0.246/hr | 1 node | 24 | $5.90 |
+| Compute, 4 build sessions × 5 h | $0.432/hr | 1 node | 20 | $8.64 |
+| Compute, one deliberate 24 h soak | $0.432/hr | 1 node | 24 | $10.37 |
 | Boot volume (exists only while the node does) | $0.0425/GB-mo | 60 GB | 44 | $0.16 |
-| Ledger volume, retained 15 days to avoid re-sync | $0.0595/GB-mo | 100 GB | 360 | $2.98 |
+| Ledger volume, retained 15 days | $0.0595/GB-mo | 250 GB | 360 | $7.45 |
+| Accounts volume, retained 15 days | $0.0595/GB-mo | 100 GB | 360 | $2.98 |
 | OKE Basic control plane | $0 | — | — | $0.00 |
-| **Total** | | | | **$13.96** |
+| **Total** | | | | **$29.60** |
 
 Plus a one-off ephemeral build VM (E4.Flex 6/64, 100 GB boot, ~2 h) at roughly **$0.50**. Delete it
 the same evening — its 100 GB boot volume competes with the ledger for the block-volume quota.
 
-**Delta: $122.16.** `make pause` / `make resume` are Variant B.
+**Delta: $215.63.** `make pause` / `make resume` are Variant B.
 
 ### Why Variant B, given the headroom
 
-$13.96 against €250 leaves ~95% unused, so the choice is not financial. Scaling to zero between
+$29.60 against €250 leaves ~88% unused, so the choice is not financial. Scaling to zero between
 sessions is chosen because it is the defensible engineering habit and because `reclaimPolicy:
 Retain` on the ledger volume makes it free of consequence. What the headroom genuinely buys is a
 **longer soak** — the 24 h in the model is a floor, not a budget ceiling, and more continuous

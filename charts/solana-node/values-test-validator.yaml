@@ -7,6 +7,8 @@ persistence:
   enabled: true
   storageClassName: standard
   size: 20Gi
+  accounts:
+    enabled: false   # pointless for a self-contained test validator
 resources:
   requests: { cpu: "1", memory: 4Gi }
   limits:   { memory: 8Gi }

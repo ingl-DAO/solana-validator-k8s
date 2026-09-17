@@ -15,27 +15,31 @@ That framing is the point: a repo implying you would put a mainnet validator on 
 would be worse than one that says plainly where the path stops being supported and why it was
 still worth walking.
 
-## The blockstore floor exceeds the storage quota
+## The blockstore floor is large, but it fits
 
 `--limit-ledger-size` has a **minimum** of 50,000,000 shreds on Agave 4.2.x. You cannot configure
 a smaller blockstore. At ~1250 B/shred that is ~62 GB of data shreds and, once coding shreds are
-counted, potentially ~125 GB on disk.
+counted, potentially ~125 GB on disk. It is a FIFO ceiling rather than a preallocation, and testnet
+in practice sits far below it.
 
-The OCI trial allows 200 GB of block volume **including boot volumes**, with a 50 GB per-volume
-minimum. A 60 GB boot volume leaves 140 GB; this deploys a 100 GB ledger PVC and keeps 40 GB of
-headroom for an in-place expansion.
+An earlier draft of this file recorded that this floor exceeded the available storage quota. That
+was wrong, and the way it was wrong is worth keeping: it was computed against
+`total-free-storage-gb` (200 GB, the Always Free allowance) rather than `total-storage-gb`
+(30,720 GB per AD, the actual limit on a credit-funded trial). The ledger volume is now 250 GB,
+which clears the worst case with room to spare, and `SolanaLedgerDiskFilling` is a genuine alert
+rather than a compensating control for an undersized disk.
 
-So the minimum blockstore Agave permits is larger than the volume it is given. It is a FIFO ceiling
-rather than a preallocation, and testnet in practice sits well below it, so the actual protection
-is the `SolanaLedgerDiskFilling` alert (a `predict_linear` over 6h projecting 24h ahead) plus
-`allowVolumeExpansion: true`. This is a real, documented collision, not a solved problem.
+## Storage is generous; the shape is the constraint
 
-## One volume, not two
+Accounts and ledger are on **separate volumes**, as Anza recommends — 100 GB and 250 GB. The
+binding constraint in this tenancy turned out to be compute, not storage:
+`standard-e4-core-count` is 0 (E4 unavailable entirely) and E5 allows 13 OCPU / 208 GB per AD, of
+which this uses 8 / 96 to stay inside the credit balance. See ADR 0010.
 
-Anza says accounts and ledger belong on separate spindles. With a 200 GB aggregate quota and a
-50 GB per-volume minimum, splitting them costs 50 GB of quota for the privilege of the split. One
-PVC it is, and the IO contention between the accounts DB and the blockstore is real and
-unmitigated here.
+## Still one node
+
+`replicas: 1` for the reasons below, not for storage ones — that rationale did not survive
+measurement (ADR 0007).
 
 ## Single node, single replica
 
