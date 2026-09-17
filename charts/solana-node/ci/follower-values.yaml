@@ -1,0 +1,7 @@
+# Render-only. Never installed in CI — it demands hostNetwork and a public address.
+# `helm template` against this is what catches template regressions in the follower path.
+mode: follower
+cluster: testnet
+hostNetwork: true
+persistence:
+  storageClassName: oci-bv-hp

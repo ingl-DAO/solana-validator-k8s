@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "solana-node.fullname" . }}
+  labels: {{- include "solana-node.labels" . | nindent 4 }}
+spec:
+  # Not a scaling knob. Two pods sharing an identity keypair double-sign; on a voting node that is
+  # a slashing story. HA for Solana is gossip-based identity failover, not replica count.
+  replicas: 1
+  # Kubernetes' default surge-before-terminate semantics are actively hostile to this workload.
+  updateStrategy:
+    type: OnDelete
+  serviceName: {{ include "solana-node.fullname" . }}-headless
+  selector:
+    matchLabels: {{- include "solana-node.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "solana-node.labels" . | nindent 8 }}
+      annotations:
+        checksum/flags: {{ include (print $.Template.BasePath "/configmap-flags.yaml") . | sha256sum }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+{{- if .Values.hostNetwork }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+{{- end }}
+      securityContext:
+        # Agave >=2.0 uses io_uring to unpack snapshots. seccomp RuntimeDefault blocks
+        # io_uring_setup/enter/register. The symptom is a failure DURING unpack — minutes in,
+        # after a multi-GB download — not a clean refusal at process start.
+        seccompProfile:
+          type: Unconfined
+      affinity:
+{{- if .Values.affinity }}
+{{- toYaml .Values.affinity | nindent 8 }}
+{{- else }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels: {{- include "solana-node.selectorLabels" . | nindent 16 }}
+{{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+{{- end }}
+      containers:
+      - name: validator
+        image: {{ include "solana-node.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["/bin/bash", "/flags/run.sh"]
+        securityContext:
+          # Agave 4.0+ drops permitted-but-unneeded capabilities at startup and exits(1) on a
+          # MISSING required one. No XDP here, so no NET_RAW/NET_ADMIN/BPF/PERFMON are needed.
+          capabilities:
+            drop: ["ALL"]
+          allowPrivilegeEscalation: false
+        ports:
+        - { name: rpc, containerPort: {{ .Values.ports.rpc }}, protocol: TCP }
+{{- if .Values.hostNetwork }}
+        - { name: gossip, containerPort: {{ .Values.ports.p2pMin }}, protocol: UDP }
+{{- end }}
+        resources: {{- toYaml .Values.resources | nindent 10 }}
+        startupProbe:
+          # JSON-RPC only binds AFTER snapshot fetch, unpack and ledger load, so a plain TCP
+          # connect is the clean "finished booting" signal. 720 * 10s = 2h of grace.
+          tcpSocket: { port: {{ .Values.ports.rpc }} }
+          periodSeconds: 10
+          failureThreshold: {{ if eq .Values.mode "test-validator" }}30{{ else }}720{{ end }}
+        readinessProbe:
+          exec:
+            command: ["/bin/bash", "/probes/readiness.sh"]
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+        # NO livenessProbe, deliberately. A catching-up node is unready, never unhealthy. A
+        # liveness probe tied to sync progress restart-loops forever, and every restart costs
+        # another snapshot fetch — it converts a slow start into an outage that never ends.
+{{- if eq .Values.mode "follower" }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["agave-validator", "--ledger", "/data/ledger", "exit",
+                        "--force", "--skip-health-check", "--skip-new-snapshot-check"]
+{{- end }}
+        volumeMounts:
+        - { name: data, mountPath: /data }
+        - { name: flags, mountPath: /flags }
+        - { name: probes, mountPath: /probes }
+{{- if eq .Values.mode "follower" }}
+        - { name: keys, mountPath: /keys, readOnly: true }
+{{- end }}
+{{- if .Values.exporter.enabled }}
+      - name: exporter
+        image: {{ .Values.exporter.image.repository }}:{{ .Values.exporter.image.tag }}
+        imagePullPolicy: {{ .Values.exporter.image.pullPolicy }}
+        args:
+        # With hostNetwork the sidecar shares the host netns, so it reaches RPC over loopback.
+        # The JSON-RPC port is therefore never on the wire at all — stronger than an NSG rule.
+        - "-rpc-url"
+        - "http://127.0.0.1:{{ .Values.ports.rpc }}"
+{{- if .Values.exporter.lightMode }}
+        - "-light-mode"
+{{- end }}
+        - "-listen-address"
+        - "0.0.0.0:{{ .Values.ports.metrics }}"
+        - "-slot-pace"
+        - "{{ .Values.exporter.slotPace }}"
+        ports:
+        - { name: metrics, containerPort: {{ .Values.ports.metrics }}, protocol: TCP }
+        resources: {{- toYaml .Values.exporter.resources | nindent 10 }}
+        securityContext:
+          capabilities: { drop: ["ALL"] }
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+{{- end }}
+      volumes:
+      - name: flags
+        configMap:
+          name: {{ include "solana-node.fullname" . }}-flags
+          defaultMode: 0755
+      - name: probes
+        configMap:
+          name: {{ include "solana-node.fullname" . }}-flags
+          items: [{ key: readiness.sh, path: readiness.sh }]
+          defaultMode: 0755
+{{- if eq .Values.mode "follower" }}
+      - name: keys
+        secret:
+          secretName: {{ include "solana-node.fullname" . }}-identity
+          defaultMode: 0400
+{{- end }}
+{{- if not .Values.persistence.enabled }}
+      - name: data
+        emptyDir: {}
+{{- else }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: {{- toYaml .Values.persistence.accessModes | nindent 8 }}
+      storageClassName: {{ .Values.persistence.storageClassName | quote }}
+      resources:
+        requests:
+          # One PVC, not two. Anza says accounts and ledger belong on separate spindles; with a
+          # 200 GB quota and a 50 GB per-volume minimum, splitting costs 50 GB of quota for the
+          # privilege. Recorded in LIMITATIONS.md with the arithmetic.
+          storage: {{ .Values.persistence.size }}
+{{- end }}

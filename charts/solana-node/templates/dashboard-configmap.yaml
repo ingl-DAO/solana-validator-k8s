@@ -1,0 +1,14 @@
+{{- if .Values.monitoring.dashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "solana-node.fullname" . }}-dashboard
+  labels:
+    {{- include "solana-node.labels" . | nindent 4 }}
+    # Picked up by the Grafana sidecar. Without this label the dashboard is never loaded.
+    grafana_dashboard: "1"
+    release: {{ .Values.monitoring.releaseLabel }}
+data:
+  solana-node.json: |
+{{ .Files.Get "dashboards/solana-node.json" | indent 4 }}
+{{- end }}

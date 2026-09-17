@@ -1,0 +1,58 @@
+{{- if .Values.monitoring.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "solana-node.fullname" . }}
+  labels:
+    {{- include "solana-node.labels" . | nindent 4 }}
+    release: {{ .Values.monitoring.releaseLabel }}
+spec:
+  groups:
+  - name: solana-node
+    rules:
+    - alert: SolanaNodeUnhealthy
+      expr: solana_node_is_healthy == 0
+      for: 5m
+      labels: { severity: warning }
+      annotations:
+        summary: "Solana node reports unhealthy"
+        runbook_url: "https://github.com/marcjazz/solana-validator-k8s/blob/main/docs/runbook.md"
+
+    - alert: SolanaSlotHeightStalled
+      # Cluster nominal is ~2.5 slots/s. This catches a wedged node that still answers getHealth.
+      # Alerting on num_slots_behind alone would never fire here: that field is only populated
+      # when getHealth returns the UNHEALTHY error object, so a silent node reports nothing.
+      expr: rate(solana_node_slot_height[5m]) < 1
+      for: 5m
+      labels: { severity: critical }
+      annotations:
+        summary: "Slot height advancing < 1 slot/s — node is wedged"
+
+    - alert: SolanaSlotLagBehindCluster
+      expr: solana_node_num_slots_behind > {{ .Values.validator.healthCheckSlotDistance }}
+      for: 10m
+      labels: { severity: warning }
+
+    - alert: SolanaLedgerDiskFilling
+      expr: predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"data-.*"}[6h], 24*3600) < 0
+      for: 30m
+      labels: { severity: critical }
+      annotations:
+        summary: "Ledger PVC projected full within 24h"
+        description: >-
+          The --limit-ledger-size floor Agave permits (50M shreds) implies a footprint larger than
+          this volume. Resize the PVC in place (allowVolumeExpansion is on) or restart with a
+          fresh ledger. See LIMITATIONS.md.
+
+    - alert: SolanaVersionDrift
+      # Pinned version vs the cluster's modal version.
+      expr: count(count by (version) (solana_node_version)) > 1
+      for: 1h
+      labels: { severity: info }
+
+    - alert: SolanaRestartLoop
+      expr: increase(kube_pod_container_status_restarts_total{container="validator"}[1h]) > 3
+      labels: { severity: critical }
+      annotations:
+        summary: "Validator restarting repeatedly — each restart costs another snapshot fetch"
+{{- end }}

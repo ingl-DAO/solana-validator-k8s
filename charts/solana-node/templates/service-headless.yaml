@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "solana-node.fullname" . }}-headless
+  labels: {{- include "solana-node.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true   # stable DNS while the node is still catching up
+  selector: {{- include "solana-node.selectorLabels" . | nindent 4 }}
+  ports:
+  - { name: rpc, port: {{ .Values.ports.rpc }}, protocol: TCP }

@@ -1,0 +1,16 @@
+# Used by `ct install` in CI. kind's default StorageClass is `standard`.
+mode: test-validator
+hostNetwork: false
+persistence:
+  enabled: true
+  storageClassName: standard
+  size: 5Gi
+resources:
+  requests: { cpu: 250m, memory: 1Gi }
+  limits:   { memory: 3Gi }
+exporter:
+  enabled: false        # no CRDs in the CI cluster
+monitoring:
+  serviceMonitor: { enabled: false }
+  prometheusRule: { enabled: false }
+  dashboard: { enabled: false }

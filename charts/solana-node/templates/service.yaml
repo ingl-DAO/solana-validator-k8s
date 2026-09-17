@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "solana-node.fullname" . }}
+  labels: {{- include "solana-node.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "solana-node.selectorLabels" . | nindent 4 }}
+  ports:
+{{- if .Values.exporter.enabled }}
+  # The ServiceMonitor selects on this port NAME. Renaming it silently breaks scraping.
+  - { name: metrics, port: {{ .Values.ports.metrics }}, targetPort: metrics, protocol: TCP }
+{{- end }}
+{{- if eq .Values.mode "test-validator" }}
+  # Only exposed in test-validator mode. In follower mode RPC binds 127.0.0.1 and is
+  # deliberately unreachable — an open Solana RPC is a documented abuse vector.
+  - { name: rpc, port: {{ .Values.ports.rpc }}, targetPort: rpc, protocol: TCP }
+{{- end }}

@@ -1,0 +1,50 @@
+{{- if .Values.nodeTuner.enabled }}
+# FALLBACK PATH ONLY — off by default. See docs/decisions/0008.
+#
+# This mutates the NODE, not the pod. It is the right answer only on a cluster where you cannot
+# reach the node bootstrap (someone else's managed node pool). PodSecurity `baseline` and
+# `restricted` will reject it outright. The preferred path is node-pool cloud-init:
+# terraform/modules/oci-oke/cloud-init/worker-init.sh
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "solana-node.fullname" . }}-node-tuner
+  labels: {{- include "solana-node.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "solana-node.name" . }}-node-tuner
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "solana-node.name" . }}-node-tuner
+    spec:
+      hostPID: true
+      hostNetwork: true
+{{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+{{- end }}
+      initContainers:
+      - name: sysctl
+        image: busybox:1.36
+        securityContext:
+          privileged: true
+        command: ["sh", "-c"]
+        args:
+        - |
+          set -eux
+          sysctl -w net.core.rmem_max=134217728
+          sysctl -w net.core.rmem_default=134217728
+          sysctl -w net.core.wmem_max=134217728
+          sysctl -w net.core.wmem_default=134217728
+          sysctl -w vm.max_map_count=1000000
+          sysctl -w fs.nr_open=1000000
+          # NOTE: this cannot fix container rlimits. LimitNOFILE/LimitMEMLOCK live in the
+          # container runtime's systemd unit and are unreachable from inside a pod.
+          # Kubernetes has no pod-spec field for rlimits (kubernetes/kubernetes#3595).
+      containers:
+      - name: pause
+        image: registry.k8s.io/pause:3.9
+        resources:
+          requests: { cpu: 10m, memory: 8Mi }
+{{- end }}

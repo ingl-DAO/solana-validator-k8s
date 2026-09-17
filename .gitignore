@@ -1,0 +1,41 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!envs/*.tfvars
+override.tf
+
+# Helm
+charts/*/charts/
+*.tgz
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# Secrets
+*.pem
+*.key
+id.json
+identity.json
+*-keypair.json
+
+# Python
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# OS/Editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.env.local

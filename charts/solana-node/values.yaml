@@ -1,0 +1,124 @@
+# Default values for solana-node.
+#
+# PORTABILITY: nothing in this chart references a cloud provider. The requirements it places on
+# whatever cluster it lands in are written down in terraform/modules/README.md. Keep it that way —
+# if you find yourself adding an OCI/AWS/GCP-specific value here, it belongs in the infra layer.
+
+# mode selects which of the two tiers this release runs.
+#   test-validator : solana-test-validator. ClusterIP, no hostNetwork, no snapshot fetch.
+#                    Runs on kind with no cloud credentials. Used by CI and `make dev-up`.
+#   follower       : a real non-voting Agave node syncing a live cluster. Needs hostNetwork,
+#                    a public address, and every requirement in the infra contract.
+mode: test-validator
+
+cluster: testnet   # testnet | devnet — only meaningful when mode=follower
+
+image:
+  repository: ghcr.io/marcjazz/agave
+  tag: ""          # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+# --- networking -------------------------------------------------------------------------------
+# hostNetwork is REQUIRED for mode=follower: gossip peers must reach the node at the address it
+# advertises, and NodePort remapping breaks that. See ADR 0005.
+hostNetwork: false
+
+ports:
+  rpc: 8899
+  websocket: 8900
+  metrics: 8080
+  # Agave 4.1 raised MINIMUM_VALIDATOR_PORT_RANGE_WIDTH to 26, and the range is half-open
+  # [min, max). The 8000-8020 in essentially every firewall guide on the internet is now too
+  # narrow and Agave will refuse to start.
+  p2pMin: 8000
+  p2pMax: 8026
+
+# How the node determines the address it advertises to peers.
+#   ipecho : let Agave resolve it by IP-echo against --entrypoint. Correct for 1:1 NAT
+#            (OCI, AWS). --gossip-host was REMOVED in Agave 4.0; do not look for it.
+#   static : pass advertisedIp explicitly via the hidden --advertised-ip flag.
+advertisedAddress:
+  strategy: ipecho
+  staticIp: ""
+
+# --- storage ----------------------------------------------------------------------------------
+persistence:
+  enabled: true
+  # Supplied by the infra layer. Never define a StorageClass in this chart.
+  storageClassName: ""
+  size: 100Gi
+  accessModes: ["ReadWriteOnce"]
+
+# --- validator tuning -------------------------------------------------------------------------
+validator:
+  # FIFO ceiling on the blockstore, in shreds. 50000000 is the legacy MINIMUM Agave permits on
+  # 4.2.x; you cannot configure a smaller one. At ~1250 B/shred that is ~62 GB of data shreds and,
+  # with coding shreds, potentially ~125 GB on disk — larger than the whole 200 GB OCI trial quota
+  # minus boot volumes. It is a ceiling, not a preallocation, and testnet sits far below it in
+  # practice. The real protection is the SolanaLedgerDiskFilling alert. See LIMITATIONS.md.
+  limitLedgerSize: 50000000
+  # ~5 min of testnet slots. After an overnight scale-to-zero the node refetches a fresh 5.3 GB
+  # snapshot rather than replaying a stale one. Cheap only because this is testnet: on devnet the
+  # same setting would cost a 65.9 GB download every morning.
+  maximumLocalSnapshotAge: 1500
+  healthCheckSlotDistance: 150
+  accountsIndexMemoryLimitMb: 16000
+  extraFlags: []
+
+resources:
+  requests:
+    cpu: "5"
+    memory: 48Gi
+  limits:
+    # No CPU limit on purpose: CFS-throttling a replay thread is self-harm.
+    memory: 56Gi
+
+# --- exporter ---------------------------------------------------------------------------------
+# Agave exposes NO Prometheus endpoint. A repo-wide search for "prometheus" in anza-xyz/agave
+# returns zero hits; metrics/ posts InfluxDB v1 line protocol to a single destination which SFDP
+# requires to be metrics.solana.com, so it cannot cleanly be teed. RPC polling is therefore the
+# architecture, not a workaround.
+exporter:
+  enabled: true
+  image:
+    repository: ghcr.io/asymmetric-research/solana-exporter
+    tag: v3.1.0
+    pullPolicy: IfNotPresent
+  lightMode: true
+  slotPace: 5
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits:   { memory: 128Mi }
+
+# --- monitoring -------------------------------------------------------------------------------
+monitoring:
+  # The kube-prometheus-stack release name. Every ServiceMonitor, PrometheusRule and dashboard
+  # ConfigMap must carry `release: <this>` — the *SelectorNilUsesHelmValues defaults are all true,
+  # and a correct-looking object without that label is silently ignored, with no event and no log.
+  releaseLabel: kube-prometheus-stack
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+  prometheusRule:
+    enabled: true
+  dashboard:
+    enabled: true
+
+# --- node tuning fallback ---------------------------------------------------------------------
+# Preferred path is node-pool cloud-init (see terraform/modules/oci-oke/cloud-init/). Enable this
+# only on clusters where you do not own the nodes. It mutates the NODE, not the pod, and
+# PodSecurity `baseline`/`restricted` will reject it outright. See ADR 0008.
+nodeTuner:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+terminationGracePeriodSeconds: 120
+nodeSelector: {}
+tolerations: []
+affinity: {}

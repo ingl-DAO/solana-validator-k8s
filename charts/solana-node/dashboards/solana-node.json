@@ -1,0 +1,9 @@
+{
+  "__comment": "PLACEHOLDER. Session 4 replaces this with the dashboard from asymmetric-research/solana-exporter. Import it with the Makefile target, which rewrites the hardcoded datasource uid: sed -i 's/fe2dataaouznkf/prometheus/g'. That uid does not exist in kube-prometheus-stack (whose uid is 'prometheus'), and without the rewrite every panel renders empty. Do NOT use grafana.com dashboards 14625 / 22575 / 19236 / 23928 - all four are byte-identical 19,875-byte re-uploads built on sol_* metric names and render entirely empty against this exporter.",
+  "title": "Solana Node",
+  "uid": "solana-node",
+  "schemaVersion": 39,
+  "panels": [],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" }
+}

@@ -1,0 +1,6 @@
+compartment_id      = "ocid1.compartment.oc1..REPLACE"
+region              = "eu-paris-1"
+availability_domain = "REPLACE:EU-PARIS-1-AD-1"
+admin_cidr          = "203.0.113.4/32"
+ssh_public_key      = "ssh-ed25519 AAAA... you@host"
+node_pool_size      = 1

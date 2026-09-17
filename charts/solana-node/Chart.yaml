@@ -1,0 +1,17 @@
+apiVersion: v2
+name: solana-node
+description: A Solana node (Agave) on Kubernetes — non-voting testnet follower, or a local test-validator
+type: application
+version: 0.1.0
+appVersion: "4.2.2"
+keywords: [solana, agave, validator, blockchain]
+home: https://github.com/marcjazz/solana-validator-k8s
+sources:
+  - https://github.com/marcjazz/solana-validator-k8s
+  - https://github.com/anza-xyz/agave
+maintainers:
+  - name: marcjazz
+annotations:
+  # No arm64. No linux/aarch64 Agave binary has ever been published, and Anza requires
+  # AVX2 + SHA extensions. See docs/decisions/0004-build-agave-from-source.md
+  artifacthub.io/architectures: "amd64"

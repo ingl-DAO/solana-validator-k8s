@@ -1,0 +1,26 @@
+{{- if and .Values.monitoring.serviceMonitor.enabled .Values.exporter.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "solana-node.fullname" . }}
+  labels:
+    {{- include "solana-node.labels" . | nindent 4 }}
+    # REQUIRED. kube-prometheus-stack's *SelectorNilUsesHelmValues all default to true, so a
+    # ServiceMonitor without this label is ignored with no event and no log line.
+    release: {{ .Values.monitoring.releaseLabel }}
+spec:
+  selector:
+    matchLabels: {{- include "solana-node.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: metrics
+    interval: {{ .Values.monitoring.serviceMonitor.interval }}
+    relabelings:
+    # The exporter emits NO `app` or `hostname` label, but the upstream dashboard and all six of
+    # its recording rules filter on {app="solana"} and aggregate by (hostname) — upstream injects
+    # them via static_configs. Skip these two relabelings and every panel and every rule returns
+    # "No data", with no error anywhere. This is the most likely way this project fails silently.
+    - targetLabel: app
+      replacement: solana
+    - sourceLabels: [__meta_kubernetes_pod_node_name]
+      targetLabel: hostname
+{{- end }}

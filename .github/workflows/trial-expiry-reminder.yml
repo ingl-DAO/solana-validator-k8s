@@ -1,0 +1,56 @@
+name: Trial Expiry Reminder
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-trial-deadline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const deadline = process.env.TRIAL_DEADLINE;
+            if (!deadline) {
+              core.setFailed('TRIAL_CAPTURE_DEADLINE repository variable not set');
+              return;
+            }
+
+            const deadlineDate = new Date(deadline);
+            const today = new Date();
+            const daysRemaining = Math.floor((deadlineDate - today) / (1000 * 60 * 60 * 24));
+
+            const issueTitle = 'OCI Trial Capture Deadline Reminder';
+            const body = `OCI trial expires in **${daysRemaining}** days (${deadline}).\n\nEnsure evidence of the fully functional NON-VOTING testnet follower is captured before this deadline for future reference.`;
+
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'trial-expiry'
+            });
+
+            const existing = issues.data.find(i => i.title === issueTitle);
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: body
+              });
+              core.info(`Updated issue #${existing.number}`);
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: body,
+                labels: ['trial-expiry']
+              });
+              core.info('Created new issue');
+            }
+        env:
+          TRIAL_DEADLINE: ${{ vars.TRIAL_CAPTURE_DEADLINE }}

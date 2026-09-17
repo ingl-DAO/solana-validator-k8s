@@ -1,0 +1,17 @@
+# Tier 1 — the workload that cannot fail.
+# Self-contained solana-test-validator. No cluster to join, no snapshot, no hostNetwork, no cloud.
+# This is what CI exercises and what `make dev-up` gives a reviewer on their laptop.
+mode: test-validator
+hostNetwork: false
+persistence:
+  enabled: true
+  storageClassName: standard
+  size: 20Gi
+resources:
+  requests: { cpu: "1", memory: 4Gi }
+  limits:   { memory: 8Gi }
+exporter:
+  enabled: true
+monitoring:
+  serviceMonitor: { enabled: true }
+  prometheusRule: { enabled: false }   # slot-lag alerts are meaningless with no cluster

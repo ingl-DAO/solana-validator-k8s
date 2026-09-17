@@ -1,0 +1,26 @@
+# Tier 2 — the credibility exhibit.
+# A real non-voting Agave node syncing Solana testnet. Requires every item in the infra contract
+# (terraform/modules/README.md): public address, UDP 8000-8026, node sysctls, runtime rlimits.
+mode: follower
+cluster: testnet
+hostNetwork: true
+
+persistence:
+  enabled: true
+  storageClassName: oci-bv-hp   # supplied by terraform/modules/oci-oke; swap per provider
+  size: 100Gi
+
+advertisedAddress:
+  strategy: ipecho
+
+resources:
+  requests: { cpu: "5", memory: 48Gi }
+  limits:   { memory: 56Gi }
+
+nodeSelector:
+  solana.io/node: "true"
+
+monitoring:
+  serviceMonitor: { enabled: true }
+  prometheusRule: { enabled: true }
+  dashboard: { enabled: true }

@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+      - name: Terraform Init (modules/oci-oke)
+        run: terraform init -backend=false
+        working-directory: terraform/modules/oci-oke
+      - name: Terraform Validate (modules/oci-oke)
+        run: terraform validate
+        working-directory: terraform/modules/oci-oke
+      - name: Terraform Init (envs/oci-testnet)
+        run: terraform init -backend=false
+        working-directory: terraform/envs/oci-testnet
+      - name: Terraform Validate (envs/oci-testnet)
+        run: terraform validate
+        working-directory: terraform/envs/oci-testnet
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Helm Lint
+        run: helm lint charts/solana-node
+      - name: Helm Template (values-test-validator.yaml)
+        run: helm template solana-node charts/solana-node -f charts/solana-node/values-test-validator.yaml > /tmp/test-validator-manifest.yaml
+      - name: Helm Template (values-testnet-follower.yaml)
+        run: helm template solana-node charts/solana-node -f charts/solana-node/values-testnet-follower.yaml > /tmp/testnet-follower-manifest.yaml
+      - name: Install kubeconform
+        run: |
+          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+          sudo mv kubeconform /usr/local/bin/
+      - name: Validate with kubeconform (test-validator)
+        run: kubeconform -strict -summary -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' /tmp/test-validator-manifest.yaml
+      - name: Validate with kubeconform (testnet-follower)
+        run: kubeconform -strict -summary -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' /tmp/testnet-follower-manifest.yaml
+
+  chart-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: azure/setup-helm@v4
+      - name: Chart Testing lint
+        uses: helm/chart-testing-action@v2
+        with:
+          command: lint
+          charts: charts/solana-node
+      - uses: helm/kind-action@v1
+      - name: Chart Testing install
+        uses: helm/chart-testing-action@v2
+        with:
+          command: install
+          charts: charts/solana-node
+          helm_extra_args: --values charts/solana-node/ci/kind-values.yaml --timeout 600s
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Checkov on Terraform
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform
+          framework: terraform
+          external_checks_dir: policies
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+      - name: Run Hadolint on Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/Dockerfile

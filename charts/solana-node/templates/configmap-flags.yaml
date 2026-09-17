@@ -1,0 +1,62 @@
+{{- include "solana-node.validate" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "solana-node.fullname" . }}-flags
+  labels: {{- include "solana-node.labels" . | nindent 4 }}
+data:
+  run.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Printed before exec so the rlimits are in the pod log as evidence. If these read
+    # 1024 / 64 the node-layer tuning did not land — see terraform/modules/README.md §5,§6.
+    echo "rlimits at start: nofile=$(ulimit -n) memlock=$(ulimit -l)"
+
+{{- if eq .Values.mode "test-validator" }}
+    # Tier 1: self-contained, no cluster to join, no snapshot to fetch. Starts in seconds.
+    exec solana-test-validator \
+      --ledger /data/ledger \
+      --rpc-port {{ .Values.ports.rpc }} \
+      --bind-address 0.0.0.0 \
+      --log -
+{{- else }}
+    exec agave-validator \
+      --identity /keys/identity.json \
+      --ledger /data/ledger \
+      --accounts /data/accounts \
+      --snapshots /data/snapshots \
+      --log - \
+{{- range $i := until 3 }}
+      --entrypoint entrypoint{{ if $i }}{{ add $i 1 }}{{ end }}.{{ $.Values.cluster }}.solana.com:8001 \
+{{- end }}
+      --expected-genesis-hash {{ include "solana-node.genesisHash" . }} \
+{{- if eq .Values.cluster "testnet" }}
+      --known-validator 5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on \
+      --known-validator dDzy5SR3AXdYWVqbDEkVFdvSPCtS9ihF5kJkHCtXoFs \
+      --known-validator Ft5fbkqNa76vnsjYNwjDZUXoTWpP7VYm3mtsaQckQADN \
+      --only-known-rpc \
+{{- end }}
+      --no-voting \
+      --private-rpc \
+      --rpc-port {{ .Values.ports.rpc }} \
+      --rpc-bind-address 127.0.0.1 \
+      --full-rpc-api=false \
+      --health-check-slot-distance {{ .Values.validator.healthCheckSlotDistance }} \
+      --bind-address 0.0.0.0 \
+      --dynamic-port-range {{ .Values.ports.p2pMin }}-{{ .Values.ports.p2pMax }} \
+      --no-port-check \
+      --wal-recovery-mode skip_any_corrupted_record \
+      --limit-ledger-size {{ .Values.validator.limitLedgerSize | int64 }} \
+      --maximum-local-snapshot-age {{ .Values.validator.maximumLocalSnapshotAge | int64 }} \
+      --accounts-index-memory-limit-mb {{ .Values.validator.accountsIndexMemoryLimitMb | int64 }} \
+{{- if eq .Values.advertisedAddress.strategy "static" }}
+      --advertised-ip {{ required "advertisedAddress.staticIp required when strategy=static" .Values.advertisedAddress.staticIp }} \
+{{- end }}
+{{- range .Values.validator.extraFlags }}
+      {{ . }} \
+{{- end }}
+      --no-wait-for-vote-to-start-leader
+{{- end }}
+  readiness.sh: |
+{{ include "solana-node.readiness" . | indent 4 }}
