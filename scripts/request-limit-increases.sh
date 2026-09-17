@@ -27,39 +27,71 @@ DRY_RUN=0
 command -v oci >/dev/null || { echo "oci CLI not found. pipx install oci-cli"; exit 1; }
 command -v jq  >/dev/null || { echo "jq not found"; exit 1; }
 
-# --- identify the tenancy -----------------------------------------------------------------------
-TENANCY="${OCI_TENANCY_OCID:-$(oci iam compartment list --access-level ACCESSIBLE \
-  --compartment-id-in-subtree true --all 2>/dev/null | jq -r '.data[0]."compartment-id"' || true)}"
-[[ -n "${TENANCY:-}" && "$TENANCY" != "null" ]] || {
-  echo "Could not determine the tenancy OCID."
-  echo "Run 'oci session authenticate' first, or export OCI_TENANCY_OCID=ocid1.tenancy.oc1..."
-  exit 1
+CONFIG="${OCI_CLI_CONFIG_FILE:-$HOME/.oci/config}"
+PROFILE="${OCI_CLI_PROFILE:-DEFAULT}"
+[[ -f "$CONFIG" ]] || { echo "No $CONFIG. Run 'oci session authenticate' first."; exit 1; }
+
+# Read a key out of the [PROFILE] section of the config. No API call, no auth needed.
+cfg() {
+  awk -v p="[$PROFILE]" -v k="$1" '
+    $0==p {inp=1; next}
+    /^\[/ {inp=0}
+    inp && $0 ~ "^[[:space:]]*"k"[[:space:]]*=" {
+      sub(/^[^=]*=[[:space:]]*/,""); gsub(/[[:space:]]*$/,""); print; exit
+    }' "$CONFIG"
 }
-REGION="$(oci iam region-subscription list --tenancy-id "$TENANCY" \
-  | jq -r '.data[] | select(."is-home-region"==true)."region-name"')"
+
+TENANCY="${OCI_TENANCY_OCID:-$(cfg tenancy)}"
+REGION="${OCI_REGION:-$(cfg region)}"
+TOKEN_FILE="$(cfg security_token_file)"
+
+[[ -n "$TENANCY" ]] || { echo "No 'tenancy' in profile [$PROFILE] of $CONFIG."; exit 1; }
+[[ -n "$REGION"  ]] || { echo "No 'region' in profile [$PROFILE] of $CONFIG.";  exit 1; }
+
+# `oci session authenticate` writes a session token. Commands MUST be told to use it, otherwise
+# the CLI silently attempts API-key auth and every call fails with a confusing auth error.
+if [[ -n "$TOKEN_FILE" ]]; then
+  export OCI_CLI_AUTH=security_token
+  echo "auth: security_token (profile [$PROFILE])"
+else
+  echo "auth: api_key (profile [$PROFILE])"
+fi
+export OCI_CLI_PROFILE="$PROFILE"
+
 echo "tenancy: $TENANCY"
-echo "home region: $REGION"
+echo "region:  $REGION"
 echo
+
+# Fail loudly if the session is expired rather than producing an empty limit list.
+if ! oci iam region-subscription list --tenancy-id "$TENANCY" >/dev/null 2>&1; then
+  echo "ERROR: the session token is not working. Refresh it with:"
+  echo "  oci session refresh --profile $PROFILE"
+  echo "or re-run: oci session authenticate"
+  exit 1
+fi
 
 # --- discover the ACTUAL limit names and current values -----------------------------------------
 # Do not hardcode these. Limit names differ by shape family and the console spelling is not
 # always what the API uses.
+fmt() { if command -v column >/dev/null; then column -t; else cat; fi; }
+
 echo "=== current compute limits matching e4 ==="
 oci limits value list --service-name compute --compartment-id "$TENANCY" --all \
   | jq -r '.data[] | select(.name|test("e4")) | "\(.name)\t\(."availability-domain" // "REGION")\t\(.value)"' \
-  | sort | column -t
+  | sort | fmt
 echo
 echo "=== current block-storage limits ==="
 oci limits value list --service-name block-storage --compartment-id "$TENANCY" --all \
   | jq -r '.data[] | "\(.name)\t\(."availability-domain" // "REGION")\t\(.value)"' \
-  | sort | column -t
+  | sort | fmt
 echo
 
-# Pick the AD with the E4 core limit. If several, take the first — capacity varies by AD and the
-# node pool pins to one anyway (var.availability_domain).
 AD="$(oci limits value list --service-name compute --compartment-id "$TENANCY" --all \
   | jq -r '.data[] | select(.name=="standard-e4-core-count") | ."availability-domain"' | head -1)"
-[[ -n "$AD" ]] || { echo "No standard-e4-core-count limit found — check the shape family name above."; exit 1; }
+if [[ -z "$AD" || "$AD" == "null" ]]; then
+  echo "No 'standard-e4-core-count' limit found. Use the exact name from the table above."
+  exit 1
+fi
 echo "targeting AD: $AD"
 
 # --- build the request --------------------------------------------------------------------------
