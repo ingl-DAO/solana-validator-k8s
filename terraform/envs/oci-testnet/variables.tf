@@ -23,3 +23,15 @@ variable "node_pool_size" {
   type    = number
   default = 1
 }
+
+variable "budget_amount" {
+  type        = number
+  description = "Budget ceiling in the tenancy's currency (EUR here)."
+  default     = 250
+}
+
+variable "budget_alert_email" {
+  type        = list(string)
+  description = "Addresses notified at 20% actual, 40% actual, and 80% forecast."
+  default     = []
+}

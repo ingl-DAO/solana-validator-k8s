@@ -25,8 +25,11 @@ module "oke" {
   ssh_public_key      = var.ssh_public_key
 
   # Set to 0 between build sessions. This single variable is the difference between
-  # $13.96 and $136.12 over the remaining trial. See docs/cost-report.md.
+  # $29.60 and $245 over the remaining trial. See docs/cost-report.md.
   node_pool_size = var.node_pool_size
+
+  budget_amount      = var.budget_amount
+  budget_alert_email = var.budget_alert_email
 }
 
 output "kubeconfig_command" {

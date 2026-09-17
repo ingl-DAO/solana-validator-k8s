@@ -70,3 +70,22 @@ variable "node_pool_size" {
 variable "ssh_public_key" {
   type = string
 }
+
+# Budgets are created in the root compartment. Defaults to compartment_id, which is correct when
+# you are working directly in the tenancy root as a trial account normally does.
+variable "tenancy_ocid" {
+  type    = string
+  default = ""
+}
+
+variable "budget_amount" {
+  type        = number
+  description = "Budget ceiling in the tenancy's currency (EUR for this tenancy)."
+  default     = 250
+}
+
+variable "budget_alert_email" {
+  type        = list(string)
+  description = "Addresses to notify on budget alerts."
+  default     = []
+}
