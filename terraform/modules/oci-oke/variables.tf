@@ -22,22 +22,33 @@ variable "admin_cidr" {
 }
 
 # Shape and AD are variables from line one, deliberately. "Out of host capacity" on flex shapes is
-# common and real on popular regions, capacity reservations are unavailable to trial accounts, and
-# the home region is fixed at signup. Fallback order: E4 -> E6 -> E5. See ADR 0010 and the risk
-# register in docs/. E4's trial limit bucket is 6 OCPU / 96 GB; E5 and E6 are 6 / 72 GB.
+# common and real on busy regions like eu-frankfurt-1, capacity reservations are unavailable to
+# trial accounts, and the home region is fixed at signup.
+#
+# Verified against the live tenancy on 2026-09-18 (`oci limits value list --service-name compute`):
+#   standard-e5-core-count    13   memory 208 GB   <- chosen
+#   standard-e3-core-ad-count 16   memory 277 GB   <- fallback, older silicon
+#   standard-e2-core-count    13
+#   standard-e4-core-count     0   E4 IS UNAVAILABLE, not merely capped
+#   standard-e6-core-count     0   (only -reserved- is non-zero)
+#   standard-a1/a2/a4          >0  but ARM: no Agave arm64 Linux binary exists. Unusable.
+# Fallback order: E5 -> E3. See ADR 0010.
 variable "node_shape" {
   type    = string
-  default = "VM.Standard.E4.Flex"
+  default = "VM.Standard.E5.Flex"
 }
 
+# 8 of the 13 available OCPUs. Not the maximum: at 13/208 the burn is ~$19.4/day, which would
+# exceed the credit balance over the remaining trial. 8/96 is ~$10.4/day and is already well
+# above Agave's testnet needs. See docs/cost-report.md.
 variable "node_ocpus" {
   type    = number
-  default = 6
+  default = 8
 }
 
 variable "node_memory_gb" {
   type    = number
-  default = 64
+  default = 96
 }
 
 variable "availability_domain" {

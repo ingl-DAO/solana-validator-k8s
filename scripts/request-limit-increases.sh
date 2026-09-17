@@ -86,36 +86,42 @@ oci limits value list --service-name block-storage --compartment-id "$TENANCY" -
   | sort | fmt
 echo
 
+LIMIT_NAME="${LIMIT_NAME:-standard-e5-core-count}"
+TARGET_OCPU="${TARGET_OCPU:-16}"
+
+CURRENT="$(oci limits value list --service-name compute --compartment-id "$TENANCY" --all \
+  | jq -r --arg n "$LIMIT_NAME" '.data[] | select(.name==$n) | .value' | head -1)"
 AD="$(oci limits value list --service-name compute --compartment-id "$TENANCY" --all \
-  | jq -r '.data[] | select(.name=="standard-e4-core-count") | ."availability-domain"' | head -1)"
+  | jq -r --arg n "$LIMIT_NAME" '.data[] | select(.name==$n) | ."availability-domain"' | head -1)"
 if [[ -z "$AD" || "$AD" == "null" ]]; then
-  echo "No 'standard-e4-core-count' limit found. Use the exact name from the table above."
+  echo "No '$LIMIT_NAME' limit found. Use an exact name from the table above,"
+  echo "or override: LIMIT_NAME=standard-e3-core-ad-count $0"
   exit 1
 fi
-echo "targeting AD: $AD"
+echo "targeting AD: $AD   ($LIMIT_NAME currently $CURRENT, requesting $TARGET_OCPU)"
+if [[ "${CURRENT:-0}" -ge "$TARGET_OCPU" ]]; then
+  echo "Already at or above $TARGET_OCPU. Nothing to request."
+  exit 0
+fi
 
 # --- build the request --------------------------------------------------------------------------
-ITEMS=$(jq -n --arg r "$REGION" --arg ad "$AD" '[
+# Block storage is deliberately NOT requested. Verified 2026-09-18: total-storage-gb is already
+# 30720 GB per AD. The 200 GB figure that drove the original single-PVC design is
+# total-free-storage-gb -- the Always Free allowance, which does not bind a credit-funded trial.
+ITEMS=$(jq -n --arg r "$REGION" --arg ad "$AD" --arg n "$LIMIT_NAME" --argjson v "$TARGET_OCPU" '[
   { serviceName: "compute",
-    limitName:   "standard-e4-core-count",
+    limitName:   $n,
     scope:       "AD",
     region:      $r,
     availabilityDomain: $ad,
-    value:       16 },
-  { serviceName: "block-storage",
-    limitName:   "total-storage-gb",
-    scope:       "AD",
-    region:      $r,
-    availabilityDomain: $ad,
-    value:       1024 }
+    value:       $v }
 ]')
 
 JUSTIFICATION="Running a single non-voting Solana testnet node on OKE for a public \
-infrastructure-as-code reference project. The 6 OCPU per-AD cap on VM.Standard.E4.Flex prevents \
-using Ultra High Performance block volumes, which require multipath attachment and therefore 16 \
-OCPU. The 200 GB aggregate block volume limit includes boot volumes, which with a 50 GB minimum \
-volume size leaves insufficient room for the node's ledger. Single tenancy, single node, \
-short-lived."
+infrastructure-as-code reference project. The current ${CURRENT} OCPU per-AD limit on \
+VM.Standard.E5.Flex is below the 16 OCPU required for multipath block volume attachment, which \
+is in turn required for the Ultra High Performance storage tier that this IO-sensitive workload \
+needs. Single tenancy, single node, short-lived."
 
 echo
 echo "=== request payload ==="
