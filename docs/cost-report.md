@@ -1,88 +1,96 @@
-# Cost Report
+# Cost report
 
-## Overview
+Modelled vs actual spend for the testnet follower on Oracle Cloud.
 
-This document tracks modelled vs. actual infrastructure costs for the solana-validator-k8s testnet follower node on Oracle Cloud. All costs are in USD for a trial account with promotional discounts applied.
+## Starting position — verified
 
----
+| | |
+|---|---|
+| Checked | 2026-09-18 (day 9 of the 30-day trial) |
+| Console → Billing → Credits | **€0.00 / €250.00** |
+| Spent so far | **€0.00** — the full allowance is intact |
+| Currency | **EUR**, not USD |
 
-## Plan: Cost Modelling
+This refutes the earlier working assumption that €250 on day 8 meant a remaining balance after
+~€50 of burn. Nothing has been spent. It also means **money is not the binding constraint on this
+project** — the calendar and the service limits are. See the note on the OCPU limit below, which
+is the one place where that stops being true.
 
-### Variant A: Continuous Operation (22 days)
+The modelled figures below are **USD list PAYG** rates from Oracle's pricing API (lastUpdated
+2026-09-09). Actuals will bill in EUR, and trial usage is discounted during the promotional
+period, so burn will not track list-price arithmetic. Compare against the console, not this table.
 
-**Assumption:** Node pool runs 24/7 for 22 days without scaling.
+## Modelled
 
-| Component | Unit | Qty | Rate | Subtotal |
-|-----------|------|-----|------|----------|
-| Compute (VM.Standard.E3.Flex, 2 OCPU) | OCPU-hours | 22 × 24 × 2 = 1,056 | $0.067/OCPU-hr | $70.75 |
-| Block Volume (200 GB) | GB-months | 6.67 | $0.017/GB-month | $0.11 |
-| Load Balancer (NLB, 1 hour active) | LB-hour | 528 | $0.0125/LB-hour | $6.60 |
-| Data Transfer (egress, ~500 MB/day) | GB | 11 | $0.0085/GB | $0.09 |
-| OKE Control Plane (free tier) | cluster | 1 | $0.00 | $0.00 |
-| Subnet + NSG (no charges) | — | — | — | — |
-| **Variant A Total** | | | | **$77.55** |
+Shape: `VM.Standard.E4.Flex`, 6 OCPU / 64 GB. Storage at 730 hr/month.
+There is **no load balancer** in this architecture — the node runs on `hostNetwork`, which removes
+that line item entirely along with a category of cloud coupling.
 
-### Variant B: Scheduled Scaling (scale pool to 0 off-hours) — CHOSEN
+### Variant A — leave it up for the remaining 22 days
 
-**Assumption:** Scale node pool to 0 when not collecting data (nights/weekends). Active 4 hours/day, 22 days.
+| Line item | Unit price | Qty | Days | Total |
+|---|---|---|---|---|
+| E4.Flex OCPU | $0.025/OCPU-hr | 6 | 22 | $79.20 |
+| E4.Flex memory | $0.0015/GB-hr | 64 | 22 | $50.69 |
+| Boot volume, Balanced 10 VPU | $0.0425/GB-mo | 60 GB | 22 | $1.87 |
+| Ledger volume, Higher Perf 20 VPU | $0.0595/GB-mo | 100 GB | 22 | $4.36 |
+| OKE Basic control plane | $0 | 1 | 22 | $0.00 |
+| Egress | free < 10 TB/mo | — | — | $0.00 |
+| **Total** | | | | **$136.12** |
 
-| Component | Unit | Qty | Rate | Subtotal |
-|-----------|------|-----|------|----------|
-| Compute (VM.Standard.E3.Flex, 2 OCPU) | OCPU-hours | 22 × 4 × 2 = 176 | $0.067/OCPU-hr | $11.79 |
-| Block Volume (200 GB) | GB-months | 6.67 | $0.017/GB-month | $0.11 |
-| Load Balancer (NLB, no active use) | LB-hour | 0 | $0.0125/LB-hour | $0.00 |
-| Data Transfer (egress, ~100 MB/active-day) | GB | 0.88 | $0.0085/GB | $0.01 |
-| OKE Control Plane (free tier) | cluster | 1 | $0.00 | $0.00 |
-| Subnet + NSG (no charges) | — | — | — | — |
-| **Variant B Total** | | | | **$11.91** |
+### Variant B — scale the node pool to 0 between sessions — CHOSEN
 
-**Decision:** Variant B chosen. Use Kubernetes CronJob or manual scaling to reduce active time and minimize compute charges.
+| Line item | Unit price | Qty | Hours | Total |
+|---|---|---|---|---|
+| Compute, 4 build sessions × 5 h | $0.246/hr | 1 node | 20 | $4.92 |
+| Compute, one deliberate 24 h soak | $0.246/hr | 1 node | 24 | $5.90 |
+| Boot volume (exists only while the node does) | $0.0425/GB-mo | 60 GB | 44 | $0.16 |
+| Ledger volume, retained 15 days to avoid re-sync | $0.0595/GB-mo | 100 GB | 360 | $2.98 |
+| OKE Basic control plane | $0 | — | — | $0.00 |
+| **Total** | | | | **$13.96** |
 
----
+Plus a one-off ephemeral build VM (E4.Flex 6/64, 100 GB boot, ~2 h) at roughly **$0.50**. Delete it
+the same evening — its 100 GB boot volume competes with the ledger for the block-volume quota.
+
+**Delta: $122.16.** `make pause` / `make resume` are Variant B.
+
+### Why Variant B, given the headroom
+
+$13.96 against €250 leaves ~95% unused, so the choice is not financial. Scaling to zero between
+sessions is chosen because it is the defensible engineering habit and because `reclaimPolicy:
+Retain` on the ledger volume makes it free of consequence. What the headroom genuinely buys is a
+**longer soak** — the 24 h in the model is a floor, not a budget ceiling, and more continuous
+time-series makes the Grafana evidence materially better.
+
+### Where money could become the constraint
+
+The 6 OCPU cap is a **service limit**, not a price. But if the limit-increase request to 16 OCPU is
+approved, it unlocks something the plan wrote off: **Ultra High Performance block storage requires
+multipath attachment, which requires ≥16 OCPU.** At 6 OCPU it is unreachable at any price. At 16 it
+becomes a purchasing decision, and one this balance can absorb. That makes the limit-increase
+request worth chasing rather than filing and forgetting.
 
 ## Actuals
 
-**Reporting Period:** TODO: [start date] to [end date]
+| Date | Service | Modelled | Actual (EUR) | Delta | Note |
+|---|---|---|---|---|---|
+| 2026-09-18 | — | — | €0.00 | — | Baseline. Nothing provisioned yet. |
+| | | | | | |
 
-| Date | Service | Component | Modelled (USD) | Actual (USD) | Delta (USD) | Notes |
-|------|---------|-----------|---|---|---|---|
-| TODO | Compute | VM.Standard.E3.Flex | TODO | TODO | TODO | TODO |
-| TODO | Storage | Block Volume | TODO | TODO | TODO | TODO |
-| TODO | Networking | Load Balancer | TODO | TODO | TODO | TODO |
-| TODO | Networking | Data Transfer (egress) | TODO | TODO | TODO | TODO |
-| | | **Actuals Subtotal** | | **TODO** | **TODO** | |
+## How this was measured
 
----
-
-## How This Was Measured
-
-**Data Source:** Oracle Cloud Infrastructure Usage API
-
-**Command:**
 ```bash
 oci usage-api request-summarized-usages \
-  --tenant-id <TENANCY_ID> \
-  --time-usage-started "2026-09-01T00:00:00Z" \
-  --time-usage-ended "2026-09-22T23:59:59Z" \
-  --granularity DAILY \
-  --query-type AGGREGATED
+  --tenant-id "$OCI_TENANCY" \
+  --time-usage-started "$(date -u -d '7 days ago' +%Y-%m-%dT00:00:00Z)" \
+  --time-usage-ended   "$(date -u +%Y-%m-%dT00:00:00Z)" \
+  --granularity DAILY --query-type COST
 ```
 
-**Processing:**
-1. Extract cost-tracking tags applied to compute instances and volumes.
-2. Filter by service (Compute, Storage, Networking) and resource tags (solana-validator, test, terraform).
-3. Sum daily charges by service; compare to modelled rates.
-
-**Discount Caveat:**
-Trial account usage is subject to promotional pricing. Standard list rates do not apply. Actual costs shown above reflect the trial period discount. Post-promotion pricing will be higher and should be remodelled once the trial ends.
-
----
+Wrapped by `make cost` (`scripts/cost-check.sh`). Daily dumps land in `docs/evidence/cost/`.
 
 ## Conclusion
 
-**TODO:**
-- Measure actual usage for the full 22-day period.
-- Compare Variant B modelled ($11.91) to actual spend.
-- Document any unexpected charges (e.g., reserved capacity, premium support, data transfer direction).
-- If actual exceeds modelled by > 10%, investigate root cause and adjust layering assumptions.
-- Baseline the cost per day of operation for future capacity planning.
+TODO — fill in after teardown: modelled total, actual total, the delta and its explanation, and
+the credit left unused. "Estimated $X/day, ran Variant B, spent €Y, left €Z unused" is the line
+that demonstrates cost discipline, which is worth more than the number itself.
