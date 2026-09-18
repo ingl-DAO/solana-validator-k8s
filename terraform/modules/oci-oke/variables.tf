@@ -92,3 +92,14 @@ variable "budget_alert_email" {
   description = "Addresses to notify on budget alerts."
   default     = []
 }
+
+# Mirrors the root module's provider auth so the kubernetes exec plugin authenticates the same way.
+variable "oci_auth" {
+  type    = string
+  default = "SecurityToken"
+}
+
+variable "oci_config_profile" {
+  type    = string
+  default = "DEFAULT"
+}

@@ -39,6 +39,9 @@ module "oke" {
 
   budget_amount      = var.budget_amount
   budget_alert_email = var.budget_alert_email
+
+  oci_auth           = var.oci_auth
+  oci_config_profile = var.oci_config_profile
 }
 
 output "kubeconfig_command" {
