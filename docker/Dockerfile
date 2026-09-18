@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 #   error[E0133]: call to unsafe function `__cpuid` is unsafe and requires unsafe function or block
 # Always take the toolchain from the tag you are building:
 #   curl -sL https://raw.githubusercontent.com/anza-xyz/agave/v<VERSION>/rust-toolchain.toml
-FROM rust:1.96.1-slim-trixie AS build
+FROM rust:1.98.0-slim-trixie AS build
 ARG AGAVE_VERSION
 # Cap build parallelism. Linking rocksdb peaks at roughly 2 GB per job, so on a 14 GB machine
 # an unbounded `-j$(nproc)` on 12 cores OOMs partway through — after 40 minutes of work.
