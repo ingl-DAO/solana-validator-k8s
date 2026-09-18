@@ -58,6 +58,22 @@ exists. Each of these cost time to discover:
 - **The OCI trial's binding constraint is service limits, not price.** 6 OCPU per shape family per
   AD, and 200 GB of block volume *including boot volumes*, with a 50 GB per-volume minimum.
 
+## Building the image
+
+`agave-validator` is not distributed as a binary, so it is compiled here. **18.1 minutes** on a
+12-core / 14 GB laptop at `-j6`, producing a 499 MB image.
+
+Pin the toolchain from the tag you are building — `cargo install` does **not** read
+`rust-toolchain.toml`, and a mismatch fails ~18 minutes in with `E0133` errors in `solana-core`
+rather than anything that names the compiler:
+
+```bash
+curl -sL https://raw.githubusercontent.com/anza-xyz/agave/v4.2.2/rust-toolchain.toml   # 1.96.1
+```
+
+Full record, including the verified tarball listing, in
+[docs/evidence/build/](docs/evidence/build/tarball-contents.md).
+
 ## Observability
 
 Agave exposes **no Prometheus endpoint**. A repo-wide search for `prometheus` in `anza-xyz/agave`
