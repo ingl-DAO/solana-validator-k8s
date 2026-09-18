@@ -14,7 +14,7 @@ ARG AGAVE_VERSION=4.2.2
 FROM debian:trixie-slim AS tools
 ARG AGAVE_VERSION
 # Pin the checksum. Fill from: curl -sL <url> | sha256sum
-ARG TARBALL_SHA256=REPLACE_ME
+ARG TARBALL_SHA256=5fc8684f7430038105fde953d4308ed56addf627f658daa61709f345448247ee
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl ca-certificates bzip2 \
  && rm -rf /var/lib/apt/lists/* \
