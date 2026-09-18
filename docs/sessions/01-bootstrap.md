@@ -53,16 +53,28 @@ volumes, which testnet does not need. `./scripts/request-limit-increases.sh` exi
 - [ ] `cp terraform/envs/oci-testnet/terraform.tfvars.example terraform/envs/oci-testnet/terraform.tfvars`
 - [ ] Fill in `compartment_id`, `ssh_public_key`, `admin_cidr` (`curl -s ifconfig.me`), and
       `budget_alert_email`. `region` and `availability_domain` are already correct.
-- [ ] Bootstrap remote state: `./scripts/bootstrap-state.sh` *(unimplemented — write it or run
-      with local state tonight and migrate later; do not block on this)*
+- [x] **Remote state — done 2026-09-18.** `./scripts/bootstrap-state.sh` created the versioned
+      bucket `tfstate-solana-validator-k8s` (namespace `frbfohzod0ut`, NoPublicAccess), minted the
+      S3-compatible credential into `terraform/.s3-credentials` (0600, gitignored), and wrote
+      `terraform/envs/oci-testnet/backend.hcl`.
+
+      Before **every** terraform command in this repo:
+      ```bash
+      source terraform/.s3-credentials
+      ```
+      The credentials live in the environment on purpose — never in a file Terraform reads.
 - [ ] Apply **only** the budget first:
 
 ```bash
+source terraform/.s3-credentials
 cd terraform/envs/oci-testnet
-terraform init
+terraform init -backend-config=backend.hcl
 terraform apply -target=module.oke.oci_budget_budget.trial \
                 -target=module.oke.oci_budget_alert_rule.forecast_80
 ```
+
+If `terraform init` fails with an opaque 400, the cause is almost always a missing
+`skip_s3_checksum` — it is already in `backend.hcl`, so check the file was actually passed.
 
 **Done when:** the forecast alert exists in the Console before any billable resource does.
 
