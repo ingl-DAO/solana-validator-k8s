@@ -27,63 +27,30 @@ DRY_RUN=0
 command -v oci >/dev/null || { echo "oci CLI not found. pipx install oci-cli"; exit 1; }
 command -v jq  >/dev/null || { echo "jq not found"; exit 1; }
 
-CONFIG="${OCI_CLI_CONFIG_FILE:-$HOME/.oci/config}"
-PROFILE="${OCI_CLI_PROFILE:-DEFAULT}"
-[[ -f "$CONFIG" ]] || { echo "No $CONFIG. Run 'oci session authenticate' first."; exit 1; }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/oci-common.sh
+source "$SCRIPT_DIR/lib/oci-common.sh"
 
-# Read a key out of the [PROFILE] section of the config. No API call, no auth needed.
-cfg() {
-  awk -v p="[$PROFILE]" -v k="$1" '
-    $0==p {inp=1; next}
-    /^\[/ {inp=0}
-    inp && $0 ~ "^[[:space:]]*"k"[[:space:]]*=" {
-      sub(/^[^=]*=[[:space:]]*/,""); gsub(/[[:space:]]*$/,""); print; exit
-    }' "$CONFIG"
-}
-
-TENANCY="${OCI_TENANCY_OCID:-$(cfg tenancy)}"
-REGION="${OCI_REGION:-$(cfg region)}"
-TOKEN_FILE="$(cfg security_token_file)"
-
-[[ -n "$TENANCY" ]] || { echo "No 'tenancy' in profile [$PROFILE] of $CONFIG."; exit 1; }
-[[ -n "$REGION"  ]] || { echo "No 'region' in profile [$PROFILE] of $CONFIG.";  exit 1; }
-
-# `oci session authenticate` writes a session token. Commands MUST be told to use it, otherwise
-# the CLI silently attempts API-key auth and every call fails with a confusing auth error.
-if [[ -n "$TOKEN_FILE" ]]; then
-  export OCI_CLI_AUTH=security_token
-  echo "auth: security_token (profile [$PROFILE])"
-else
-  echo "auth: api_key (profile [$PROFILE])"
-fi
-export OCI_CLI_PROFILE="$PROFILE"
-
+oci_select_profile || exit 1
+TENANCY="$OCI_TENANCY"
+REGION="$OCI_REGION_NAME"
 echo "tenancy: $TENANCY"
-echo "region:  $REGION"
 echo
-
-# Fail loudly if the session is expired rather than producing an empty limit list.
-if ! oci iam region-subscription list --tenancy-id "$TENANCY" >/dev/null 2>&1; then
-  echo "ERROR: the session token is not working. Refresh it with:"
-  echo "  oci session refresh --profile $PROFILE"
-  echo "or re-run: oci session authenticate"
-  exit 1
-fi
 
 # --- discover the ACTUAL limit names and current values -----------------------------------------
-# Do not hardcode these. Limit names differ by shape family and the console spelling is not
-# always what the API uses.
+# Do not hardcode these. Limit names differ by shape family and the console spelling is not always
+# what the API uses. Two of this plan's load-bearing constraints were wrong until this was run.
 fmt() { if command -v column >/dev/null; then column -t; else cat; fi; }
 
-echo "=== current compute limits matching e4 ==="
-oci limits value list --service-name compute --compartment-id "$TENANCY" --all \
-  | jq -r '.data[] | select(.name|test("e4")) | "\(.name)\t\(."availability-domain" // "REGION")\t\(.value)"' \
-  | sort | fmt
+echo "=== compute limits you can actually use (non-zero, excluding reserved) ==="
+oci_t limits value list --service-name compute --compartment-id "$TENANCY" --all \
+  | jq -r '.data[] | select(.value > 0 and .value < 1000000) | select(.name|test("core-count|memory-count")) | "\(.value)\t\(.name)\t\(."availability-domain" // "REGION")"' \
+  | sort -k2 | fmt
 echo
-echo "=== current block-storage limits ==="
-oci limits value list --service-name block-storage --compartment-id "$TENANCY" --all \
-  | jq -r '.data[] | "\(.name)\t\(."availability-domain" // "REGION")\t\(.value)"' \
-  | sort | fmt
+echo "=== block-storage limits ==="
+oci_t limits value list --service-name block-storage --compartment-id "$TENANCY" --all \
+  | jq -r '.data[] | "\(.value)\t\(.name)\t\(."availability-domain" // "REGION")"' \
+  | sort -k2 | fmt
 echo
 
 LIMIT_NAME="${LIMIT_NAME:-standard-e5-core-count}"

@@ -24,37 +24,15 @@ NEW_KEY=0
 command -v oci >/dev/null || { echo "oci CLI not found. pipx install oci-cli"; exit 1; }
 command -v jq  >/dev/null || { echo "jq not found"; exit 1; }
 
-CONFIG="${OCI_CLI_CONFIG_FILE:-$HOME/.oci/config}"
-PROFILE="${OCI_CLI_PROFILE:-DEFAULT}"
-cfg() {
-  awk -v p="[$PROFILE]" -v k="$1" '
-    $0==p {inp=1; next}
-    /^\[/ {inp=0}
-    inp && $0 ~ "^[[:space:]]*"k"[[:space:]]*=" {
-      sub(/^[^=]*=[[:space:]]*/,""); gsub(/[[:space:]]*$/,""); print; exit
-    }' "$CONFIG"
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/oci-common.sh
+source "$SCRIPT_DIR/lib/oci-common.sh"
 
-TENANCY="${OCI_TENANCY_OCID:-$(cfg tenancy)}"
-REGION="${OCI_REGION:-$(cfg region)}"
-TOKEN_FILE="$(cfg security_token_file)"
-[[ -n "$TENANCY" && -n "$REGION" ]] || { echo "No tenancy/region in [$PROFILE] of $CONFIG. Run 'oci session authenticate'."; exit 1; }
-[[ -n "$TOKEN_FILE" ]] && export OCI_CLI_AUTH=security_token
-export OCI_CLI_PROFILE="$PROFILE"
-
-# Fail fast on an expired session. `oci session authenticate` tokens last about an hour, and an
-# expired one makes the CLI BLOCK rather than error — it sits there waiting on a re-auth that
-# never comes. Every call below is wrapped in a timeout for the same reason.
-oci_t() { timeout 30 oci "$@"; }
-
-if ! oci_t iam region-subscription list --tenancy-id "$TENANCY" >/dev/null 2>&1; then
-  echo "The session token is expired or not working (the CLI hangs rather than failing on this)."
-  echo "Refresh it and re-run:"
-  echo "  oci session refresh --profile $PROFILE"
-  echo "or, if that fails:"
-  echo "  oci session authenticate"
-  exit 1
-fi
+oci_select_profile || exit 1
+TENANCY="$OCI_TENANCY"
+REGION="$OCI_REGION_NAME"
+echo "tenancy: $TENANCY"
+echo
 
 BUCKET="${STATE_BUCKET:-tfstate-solana-validator-k8s}"
 OUT_DIR="terraform"
@@ -92,8 +70,9 @@ get_user_ocid() {
   if [[ -n "${OCI_USER_OCID:-}" ]]; then echo "$OCI_USER_OCID"; return; fi
   local u; u="$(cfg user)"
   if [[ -n "$u" ]]; then echo "$u"; return; fi
-  if [[ -n "$TOKEN_FILE" && -f "$TOKEN_FILE" ]]; then
-    python3 - "$TOKEN_FILE" <<'PY'
+  local tf; tf="$(cfg security_token_file)"
+  if [[ -n "$tf" && -f "$tf" ]]; then
+    python3 - "$tf" <<'PY'
 import base64, json, sys
 tok = open(sys.argv[1]).read().strip().split('.')
 if len(tok) >= 2:

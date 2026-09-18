@@ -239,3 +239,26 @@ oci session authenticate                  # if refresh fails or the token is lon
 
 The repo's scripts guard against this: they probe the session up front and wrap every call in
 `timeout 30`, so they fail with an instruction rather than hanging.
+
+
+## "Profile already exists" and "Profile not found" for the same name
+
+**Symptom.** `oci session authenticate` reports
+`Profile EU-FRANKFURT-1 already exists in config` and then `Config written to: ...`, and afterwards
+`oci session refresh --profile EU-FRANKFURT-1` says `Profile 'EU-FRANKFURT-1' not found`.
+
+**Diagnosis.** Both are true. The conflict check upper-cases the name; the lookup does not. If the
+config holds `[eu-frankfurt-1]`, the uppercase form collides on write and misses on read. The
+session itself is fine — it was written to the lowercase profile.
+
+Also: `oci session authenticate` writes whatever profile name you type, so the live session is
+frequently **not** `[DEFAULT]`, and `[DEFAULT]` may hold a long-dead token.
+
+```bash
+grep '^\[' ~/.oci/config                    # exact profile names, case included
+ls -l --time-style=+%F\ %T ~/.oci/sessions/*/token   # which token is actually fresh
+```
+
+**Fix.** Use the name exactly as it appears in the config. The repo's scripts avoid the problem
+entirely: `scripts/lib/oci-common.sh` tries profiles newest-token-first and probes each one, so it
+finds the live session whatever it is called. Override with `OCI_CLI_PROFILE=<name>` if needed.
