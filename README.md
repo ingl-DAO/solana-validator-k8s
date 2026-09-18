@@ -105,6 +105,17 @@ See [LIMITATIONS.md](LIMITATIONS.md) for the honest list, including the fact tha
 plainly that running Agave in Docker for live clusters is not supported, and that Anza's own
 Kubernetes project `anza-xyz/validator-lab` was archived in February 2026.
 
+## Related
+
+[**ingl-DAO/permissionless-validators**](https://github.com/ingl-DAO/permissionless-validators) —
+the on-chain counterpart. A native Solana program (no Anchor) that fractionalizes validator
+creation and ownership: NFT-backed shares, a program-owned vote account, two-phase reward
+rebalancing across epoch boundaries, and NFT-weighted on-chain governance. Devnet-only, 2023.
+
+The two repositories cover the two halves of the same problem. That one is the protocol-level work
+— vote account state, stake delegation, PDA-owned authorities. This one is the operational work —
+actually running the node, and the networking, storage and observability that takes.
+
 ## Prior art
 
 - [`dysnix/charts`](https://github.com/dysnix/charts) — the only maintained Solana Helm chart.
