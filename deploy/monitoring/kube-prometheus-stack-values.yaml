@@ -1,0 +1,86 @@
+# kube-prometheus-stack, sized for one worker node on an OCI trial.
+#
+# THE ONE THING THAT SILENTLY BREAKS EVERYTHING:
+# every *Selector*NilUsesHelmValues below defaults to `true` upstream, which makes Prometheus
+# ignore any ServiceMonitor / PrometheusRule that does not carry `release: <this release name>`.
+# There is no event, no log line and no error — the target simply never appears. Setting these to
+# false makes Prometheus pick up matching objects in any namespace regardless of that label, which
+# is the right call for a single-tenant cluster and removes an entire class of silent failure.
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+
+    retention: 24h
+    retentionSize: 12GB
+
+    # emptyDir on purpose. A PVC would cost a 50 GB minimum volume for data that is thrown away
+    # at teardown; the durable artifacts are the committed dashboard JSON and the PNGs.
+    # Consequence, stated plainly: Prometheus data does NOT survive a pod restart. Take the
+    # screenshots before restarting anything.
+    storageSpec: {}
+
+    resources:
+      requests: { cpu: 100m, memory: 512Mi }
+      limits:   { memory: 2Gi }
+
+    # One node, and the validator wants the room.
+    nodeSelector:
+      kubernetes.io/os: linux
+
+grafana:
+  adminPassword: ""   # leave empty: the chart generates one into a Secret
+  defaultDashboardsTimezone: browser
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits:   { memory: 512Mi }
+  sidecar:
+    dashboards:
+      enabled: true
+      # Matches the label on the chart's dashboard ConfigMap.
+      label: grafana_dashboard
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+  persistence:
+    enabled: false   # dashboards come from ConfigMaps in git, not from Grafana's own database
+
+alertmanager:
+  alertmanagerSpec:
+    storage: {}
+    resources:
+      requests: { cpu: 25m, memory: 64Mi }
+      limits:   { memory: 256Mi }
+
+# Trimmed: single-node cluster, managed control plane. Scraping components OKE does not expose
+# produces permanently-down targets, which look like broken monitoring to anyone reviewing this.
+kubeApiServer:        { enabled: true }
+kubelet:              { enabled: true }
+kubeStateMetrics:     { enabled: true }
+nodeExporter:         { enabled: true }
+kubeControllerManager: { enabled: false }   # not exposed on OKE
+kubeScheduler:        { enabled: false }    # not exposed on OKE
+kubeEtcd:             { enabled: false }    # not exposed on OKE
+kubeProxy:            { enabled: false }    # not exposed on OKE managed nodes
+
+prometheus-node-exporter:
+  resources:
+    requests: { cpu: 25m, memory: 32Mi }
+    limits:   { memory: 128Mi }
+
+kube-state-metrics:
+  resources:
+    requests: { cpu: 25m, memory: 64Mi }
+    limits:   { memory: 256Mi }
+
+defaultRules:
+  create: true
+  rules:
+    # Off: they alert on control-plane components OKE does not expose, so they fire permanently.
+    kubeControllerManager: false
+    kubeScheduler: false
+    etcd: false
+    kubeProxy: false

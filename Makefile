@@ -40,6 +40,14 @@ template: ## Render both modes
 	@helm template $(RELEASE) $(CHART) -f $(CHART)/values-test-validator.yaml
 	@helm template $(RELEASE) $(CHART) -f $(CHART)/values-testnet-follower.yaml
 
+.PHONY: policy
+policy: ## Run only the custom Solana security policies
+	checkov -d terraform/ --external-checks-dir policies --compact --check CKV_SOLANA_1,CKV_SOLANA_2
+
+.PHONY: security
+security: ## Full IaC scan (built-in + custom). Expect 0 failed, 9 skipped-with-reason.
+	checkov -d terraform/ --external-checks-dir policies --compact
+
 .PHONY: fmt
 fmt: ## Rewrite terraform formatting in place
 	terraform fmt -recursive terraform/

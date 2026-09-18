@@ -34,6 +34,10 @@ resource "oci_containerengine_node_pool" "this" {
 
   node_config_details {
     size = var.node_pool_size
+
+    # In-transit encryption between the instance and its block volumes. Free, and there is no
+    # reason not to. (checkov CKV2_OCI_5)
+    is_pv_encryption_in_transit_enabled = true
     placement_configs {
       availability_domain = var.availability_domain
       subnet_id           = oci_core_subnet.workers.id

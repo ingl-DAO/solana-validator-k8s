@@ -1,4 +1,6 @@
 resource "oci_containerengine_cluster" "this" {
+  #checkov:skip=CKV2_OCI_6:PodSecurityPolicy was deprecated in Kubernetes 1.21 and REMOVED in 1.25. This cluster runs 1.31, where the resource does not exist. The check is obsolete; the successor (Pod Security Admission) is enforced by namespace label, not cluster config.
+
   compartment_id     = var.compartment_id
   kubernetes_version = var.kubernetes_version
   name               = "${var.name_prefix}-oke"
@@ -11,6 +13,7 @@ resource "oci_containerengine_cluster" "this" {
   endpoint_config {
     subnet_id            = oci_core_subnet.api.id
     is_public_ip_enabled = true
+    nsg_ids              = [oci_core_network_security_group.api.id]
   }
 
   options {
