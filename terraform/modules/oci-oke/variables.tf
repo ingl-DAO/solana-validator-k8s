@@ -56,9 +56,12 @@ variable "availability_domain" {
   description = "Try each AD in the region before changing shape."
 }
 
+# Verified against eu-frankfurt-1 on 2026-09-19. OKE offered v1.34.0-v1.36.1; v1.31.1 was long
+# gone. OKE drops old minors fast, so check before assuming:
+#   oci ce cluster-options get --cluster-option-id all --query 'data."kubernetes-versions"'
 variable "kubernetes_version" {
   type    = string
-  default = "v1.31.1"
+  default = "v1.34.10"
 }
 
 # Set to 0 between build sessions. This is the entire cost model: $13.96 instead of $136.12.
