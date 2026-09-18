@@ -262,3 +262,57 @@ ls -l --time-style=+%F\ %T ~/.oci/sessions/*/token   # which token is actually f
 **Fix.** Use the name exactly as it appears in the config. The repo's scripts avoid the problem
 entirely: `scripts/lib/oci-common.sh` tries profiles newest-token-first and probes each one, so it
 finds the live session whatever it is called. Override with `OCI_CLI_PROFILE=<name>` if needed.
+
+
+## 401-NotAuthenticated from the OCI Terraform provider
+
+**Symptom.** `terraform apply` fails with `401-NotAuthenticated, The required information to
+complete authentication was not provided or was incorrect`, naming a *service* (Budget, Compute,
+Containerengine) rather than anything about credentials.
+
+**Diagnosis.** The provider defaults to **API-key** auth. `oci session authenticate` produces a
+**security token**, which the provider ignores unless told to use it. The S3 state backend and the
+OCI provider authenticate completely separately — the backend can work while the provider fails.
+
+**Fix.** In the provider block:
+
+```hcl
+provider "oci" {
+  region              = var.region
+  auth                = "SecurityToken"
+  config_file_profile = "eu-frankfurt-1"   # NOT necessarily DEFAULT; case-sensitive
+}
+```
+
+Both are variables in `terraform/envs/oci-testnet` (`oci_auth`, `oci_config_profile`).
+
+## "NotImplemented: AWS chunked encoding not supported" when writing state
+
+**Symptom.** `terraform apply` creates the resources, then fails with
+`Failed to persist state to backend` and `api error NotImplemented: AWS chunked encoding not
+supported`. Terraform writes `errored.tfstate` locally and warns that re-running will fork state.
+
+**This is the dangerous one:** your infrastructure exists but Terraform has no record of it.
+
+**Diagnosis.** AWS SDK Go v2 defaults to `aws-chunked` transfer encoding with trailing checksums on
+PutObject. OCI Object Storage rejects it. `skip_s3_checksum = true` in `backend.hcl` does **not**
+cover this — it never reaches the SDK's transfer encoding.
+
+**Fix.** Environment variables, not backend config:
+
+```bash
+export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
+export AWS_RESPONSE_CHECKSUM_VALIDATION=when_required
+```
+
+Both are in `terraform/.s3-credentials`, so sourcing that file is sufficient.
+
+**Recovery, if it already happened.** Do NOT re-run apply — push the orphaned state first:
+
+```bash
+source terraform/.s3-credentials       # now carries the checksum flags
+terraform state push errored.tfstate
+terraform state list                   # confirm the resources are tracked
+terraform plan                         # expect "No changes"
+rm errored.tfstate
+```

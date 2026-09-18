@@ -78,6 +78,11 @@ If `terraform init` fails with an opaque 400, the cause is almost always a missi
 
 **Done when:** the forecast alert exists in the Console before any billable resource does.
 
+> **Done 2026-09-18.** Budget `solana-trial-guardrail` is live: €250, MONTHLY reset, 3 alert rules,
+> `terraform plan` reports No changes. Two traps were hit and are now fixed in the repo — the OCI
+> provider needing `auth = "SecurityToken"`, and the state write failing on AWS chunked encoding.
+> Both are written up in [the runbook](../runbook.md).
+
 ---
 
 ## 3. Start the image build FIRST (unattended, ~45–70 min)

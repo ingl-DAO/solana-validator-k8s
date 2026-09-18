@@ -11,8 +11,17 @@ terraform {
   backend "s3" {}
 }
 
+# `oci session authenticate` produces a SECURITY TOKEN, not an API key. The provider defaults to
+# API-key auth, so without these two lines every call fails 401-NotAuthenticated — and the failure
+# names the service (Budget, Compute, ...) rather than the credential, which sends you hunting in
+# the wrong place.
+#
+# The profile is NOT necessarily DEFAULT: `oci session authenticate` writes whichever name you
+# type, and profile lookup is case-sensitive. `grep '^\[' ~/.oci/config` shows the real names.
 provider "oci" {
-  region = var.region
+  region              = var.region
+  auth                = var.oci_auth
+  config_file_profile = var.oci_config_profile
 }
 
 module "oke" {

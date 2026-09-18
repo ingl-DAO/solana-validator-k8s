@@ -7,3 +7,6 @@ node_pool_size      = 1
 
 budget_amount      = 250
 budget_alert_email = ["kuidjamarco@gmail.com"]
+
+oci_auth           = "SecurityToken"
+oci_config_profile = "DEFAULT"   # check: grep '^\[' ~/.oci/config

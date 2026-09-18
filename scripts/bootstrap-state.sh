@@ -122,6 +122,13 @@ else
 # OCI reveals the secret only at creation; if you lose this file, delete the key and re-run.
 export AWS_ACCESS_KEY_ID="$AK"
 export AWS_SECRET_ACCESS_KEY="$SK"
+
+# REQUIRED for OCI Object Storage. AWS SDK Go v2 defaults to aws-chunked encoding with trailing
+# checksums on PutObject; OCI answers "NotImplemented: AWS chunked encoding not supported" and the
+# state write fails AFTER your resources exist. skip_s3_checksum in backend.hcl does NOT cover
+# this - it never reaches the SDK's transfer encoding.
+export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
+export AWS_RESPONSE_CHECKSUM_VALIDATION=when_required
 EOF
   chmod 600 "$CRED_FILE"
   echo "written to $CRED_FILE (0600)"
