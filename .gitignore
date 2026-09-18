@@ -29,7 +29,10 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
-build/
+# Anchored with a leading slash on purpose. An unanchored `build/` matches ANY directory named
+# build at any depth, which silently swallowed docs/evidence/build/ - the capture directory this
+# whole project depends on. Files vanished from commits with no warning.
+/build/
 
 # OS/Editor
 .DS_Store
