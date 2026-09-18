@@ -26,7 +26,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && tar -xjf /tmp/r.tar.bz2 -C /tmp
 
 # ---------- Stage B: build the validator ----------
-FROM rust:1.93.1-slim-trixie AS build
+# 1.96.1 is not a guess: it is what anza-xyz/agave pins in rust-toolchain.toml at tag v4.2.2.
+# `cargo install` from crates.io does NOT read that file, so the toolchain has to be pinned here.
+# Building 4.2.2 on 1.93.1 fails ~18 minutes in with seven E0133 errors in solana-core:
+#   error[E0133]: call to unsafe function `__cpuid` is unsafe and requires unsafe function or block
+# Always take the toolchain from the tag you are building:
+#   curl -sL https://raw.githubusercontent.com/anza-xyz/agave/v<VERSION>/rust-toolchain.toml
+FROM rust:1.96.1-slim-trixie AS build
 ARG AGAVE_VERSION
 # Cap build parallelism. Linking rocksdb peaks at roughly 2 GB per job, so on a 14 GB machine
 # an unbounded `-j$(nproc)` on 12 cores OOMs partway through — after 40 minutes of work.
