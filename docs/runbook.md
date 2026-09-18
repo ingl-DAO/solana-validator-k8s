@@ -316,3 +316,36 @@ terraform state list                   # confirm the resources are tracked
 terraform plan                         # expect "No changes"
 rm errored.tfstate
 ```
+
+
+## ImagePullBackOff: "unauthorized" from ghcr.io
+
+**Symptom.** The validator pod sits in `ImagePullBackOff`. `kubectl describe pod` shows
+`failed to authorize` or `unauthorized` against `ghcr.io/<user>/agave:4.2.2`.
+
+**Diagnosis.** GHCR packages are **private by default**, independently of the source repository's
+visibility. A public repo does not imply a public package, and nothing in the push output says so.
+Check from a logged-out client:
+
+```bash
+docker logout ghcr.io && docker pull ghcr.io/<user>/agave:4.2.2
+gh api /user/packages/container/agave --jq .visibility
+```
+
+**Fix (preferred).** Make the package public. There is **no REST API for this** — a `PATCH` to
+`/user/packages/container/<name>` returns 404. It is UI-only:
+
+`https://github.com/users/<user>/packages/container/<name>/settings` → Danger Zone →
+Change visibility → Public
+
+**Fix (if it must stay private).** Give the cluster a pull secret and reference it:
+
+```bash
+kubectl create secret docker-registry ghcr \
+  --docker-server=ghcr.io --docker-username=<user> --docker-password="$(gh auth token)"
+helm upgrade ... --set imagePullSecrets[0].name=ghcr
+```
+
+Note the token needs `read:packages`, and `gh auth refresh -s write:packages` is what grants the
+push side — a token that can `docker login` successfully may still be unable to push, because
+login only exercises read.

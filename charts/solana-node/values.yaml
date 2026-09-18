@@ -18,6 +18,14 @@ image:
   tag: ""          # defaults to .Chart.AppVersion
   pullPolicy: IfNotPresent
 
+# Only needed if the image is in a PRIVATE registry. GHCR packages default to private even when
+# the source repo is public, and the resulting failure is an ImagePullBackOff that says
+# "unauthorized" without mentioning visibility. Prefer making the package public; use this when
+# you cannot. Create the secret with:
+#   kubectl create secret docker-registry ghcr \
+#     --docker-server=ghcr.io --docker-username=<user> --docker-password=$(gh auth token)
+imagePullSecrets: []
+
 nameOverride: ""
 fullnameOverride: ""
 
