@@ -116,6 +116,11 @@ The two repositories cover the two halves of the same problem. That one is the p
 — vote account state, stake delegation, PDA-owned authorities. This one is the operational work —
 actually running the node, and the networking, storage and observability that takes.
 
+Joining them up is a recorded stretch goal: see
+[phase two](docs/phase-two-ingl-integration.md) for pointing this platform at a vote account the
+Ingl program creates, what would change, and the Alpenglow blocker that may already have closed the
+window.
+
 ## Prior art
 
 - [`dysnix/charts`](https://github.com/dysnix/charts) — the only maintained Solana Helm chart.
