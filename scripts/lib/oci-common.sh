@@ -45,7 +45,9 @@ oci_select_profile() {
     candidates=("$OCI_CLI_PROFILE")
   else
     # newest token first, then any profile without a token (api-key auth)
-    while read -r _ p; do candidates+=("$p"); done < <(
+    # `read -r _ p` on a blank trailing line yields an empty name, which then shows up in the
+    # error output as a phantom "[]" profile. Guard it.
+    while read -r _ p; do [[ -n "$p" ]] && candidates+=("$p"); done < <(
       for p in $(_profiles); do
         local tf; tf="$(cfg security_token_file "$p")"
         if [[ -n "$tf" && -f "$tf" ]]; then
