@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ---------- Stage B: build the validator ----------
 FROM rust:1.93.1-slim-trixie AS build
 ARG AGAVE_VERSION
+# Cap build parallelism. Linking rocksdb peaks at roughly 2 GB per job, so on a 14 GB machine
+# an unbounded `-j$(nproc)` on 12 cores OOMs partway through — after 40 minutes of work.
+ARG CARGO_JOBS=6
 RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential pkg-config libudev-dev llvm libclang-dev \
       protobuf-compiler libssl-dev cmake git ca-certificates \
@@ -43,7 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Expect 30-60 min and a 30-50 GB target dir. Do not build this on a GitHub-hosted runner
 # (~14 GB free disk) — it dies partway through linking.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    cargo install agave-validator --version ${AGAVE_VERSION} --locked --root /out
+    cargo install agave-validator --version ${AGAVE_VERSION} --locked --root /out -j ${CARGO_JOBS}
 
 # ---------- Runtime ----------
 FROM debian:trixie-slim
