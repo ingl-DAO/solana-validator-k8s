@@ -39,3 +39,6 @@ build/
 *.swo
 *~
 .env.local
+
+# S3-compatible credentials for the Terraform state backend
+terraform/.s3-credentials

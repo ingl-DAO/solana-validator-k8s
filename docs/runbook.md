@@ -212,3 +212,30 @@ terraform destroy
 - Always check `kubectl describe` output before searching logs; it saves time.
 - Use `kubectl get events -A --sort-by='.lastTimestamp'` to see recent cluster-wide errors.
 - For network issues, start with `tcpdump -ni any 'udp portrange 8000-8026' -c 50 | head -10` inside the pod, not outside.
+
+
+## OCI CLI hangs instead of returning
+
+**Symptom.** Any `oci ...` command sits indefinitely with no output and no error. Ctrl-C is the
+only way out. Commonly hit on `oci os ns get` or `oci limits value list`.
+
+**Diagnosis.** The session token from `oci session authenticate` has expired — they last about an
+hour. An expired token does not produce an auth error; the CLI blocks waiting on a re-auth that
+never arrives.
+
+```bash
+ls -l ~/.oci/sessions/*/token     # check the mtime
+timeout 10 oci iam region-subscription list --tenancy-id "$(awk -F'= *' '/^tenancy/{print $2;exit}' ~/.oci/config)"
+```
+
+If the `timeout` call returns 124, the session is dead.
+
+**Fix.**
+
+```bash
+oci session refresh --profile DEFAULT     # usually enough
+oci session authenticate                  # if refresh fails or the token is long expired
+```
+
+The repo's scripts guard against this: they probe the session up front and wrap every call in
+`timeout 30`, so they fail with an instruction rather than hanging.
