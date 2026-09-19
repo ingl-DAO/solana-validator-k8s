@@ -1,6 +1,7 @@
 # Limitations
 
-Written before the build, not after, so it cannot be accused of being retrofitted.
+Written before the build. The **Measured against reality** section at the end records where the
+predictions held and where they did not — kept as a record rather than quietly corrected.
 
 ## This runs on an unsupported path, deliberately
 
@@ -85,3 +86,46 @@ groups and a different metadata endpoint instead.
 
 The OCI trial expires. Everything in `docs/evidence/` is a record of a system that no longer runs.
 The only permanently executable part of this repo is `make dev-up`.
+
+
+---
+
+# Measured against reality (2026-09-19)
+
+A real Agave 4.2.2 node synced to testnet under this chart. What the predictions above got right
+and wrong:
+
+## Held up
+
+- **Non-voting, single replica, no gossip reachability behind NAT** — all as described.
+- **`seccomp: Unconfined`** was genuinely required; the snapshot unpack uses `io_uring`.
+- **The probe design.** No `livenessProbe` was the right call: startup took ~45 minutes and any
+  liveness check tied to sync progress would have restarted the pod mid-replay, discarding the
+  snapshot and looping forever.
+
+## Wrong, and how
+
+**The blockstore floor was not the disk constraint.** Measured after one hour: accounts **33 GB**,
+ledger **15 GB**, snapshots **5 GB**. Accounts dominates early; the ledger was nowhere near the
+`--limit-ledger-size` ceiling the earlier analysis fixated on. Both the original "floor exceeds
+quota" claim and its correction were reasoning about the wrong file.
+
+**Memory was knowable and is now known: 6.69 GiB peak**, during accounts index generation, with
+`--accounts-index-limit minimal`. The peak is a **startup transient** — steady state is
+~5.5–6.5 GiB. Anything sized on steady state OOMs on the next restart.
+
+**`--restricted-repair-only-mode` does not work at all** on an Alpenglow cluster. It was named
+here and in the runbook as the fallback for an unreachable node. It fails after the full snapshot
+download with `Invalid QUIC address for Alpenglow BLS`. The fallback no longer exists.
+
+## New limitations the run exposed
+
+- **The node advertises an address it cannot serve.** Repair-only being unusable, a NAT-bound
+  follower must advertise to start. Peers will attempt connections that time out. Mildly
+  antisocial; unavoidable in this configuration.
+- **`local-path` enforces no quota.** On kind the PVC size is advisory and the ledger can fill the
+  host root filesystem. Not true of the OCI `oci-bv-hp` StorageClass, which is a real block volume.
+- **The OCI layer is unproven.** It validates and partially applied, but no node ever launched
+  ([ADR 0012](docs/decisions/0012-trial-cannot-launch-paid-compute.md)). Every cloud-specific
+  claim in this repo — the stateless NSG reasoning, the cloud-init tuning, UHP storage — is
+  reasoned, not observed.

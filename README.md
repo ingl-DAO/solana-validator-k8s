@@ -1,15 +1,23 @@
 # solana-validator-k8s
 
-A Kubernetes/Helm/Prometheus platform for a **Solana testnet node**, provisioned on Oracle Cloud
-with Terraform and torn down cleanly. The node is a **non-voting testnet follower**. It is not a
-mainnet validator, and [§ What would change for mainnet](#what-would-change-for-mainnet) says
-exactly why not.
+A Kubernetes/Helm/Prometheus platform for a **Solana testnet node**. The node is a **non-voting
+follower** — not a mainnet validator, and
+[§ What would change for mainnet](#what-would-change-for-mainnet) says exactly why not.
 
-This is a platform-engineering project applied to a Solana workload, not a validator-operations
-project. The interesting parts are the UDP networking, the storage arithmetic, and the fact that
-the Kubernetes layer is portable while the cloud layer is disposable.
+This is a platform-engineering project applied to a Solana workload. The interesting parts are the
+UDP networking, the measured resource envelope, and a Kubernetes layer that is portable across
+clouds because the cloud-specific layer is deliberately disposable.
 
-> **Status:** scaffolding. Sessions 1–4 not yet run. Nothing in `docs/evidence/` is populated.
+**A real Agave 4.2.2 node reached full sync under this chart** — `getHealth: ok`, 33 slots behind
+tip, Prometheus scraping it with labels intact. Measurements in
+[§ Measured results](#measured-results); raw artifacts in
+[`docs/evidence/local/`](docs/evidence/local/RESULTS.md).
+
+> **Status, honestly.** The Kubernetes layer is **proven**: a real testnet node synced under it and
+> the full observability chain was verified end to end. The **OCI layer is written, validated and
+> never applied** — an Oracle free trial cannot launch paid compute at all, whatever the credits
+> say ([ADR 0012](docs/decisions/0012-trial-cannot-launch-paid-compute.md)). The network, NSGs and
+> OKE cluster applied cleanly before that wall; the node pool did not.
 
 ## Run it in 5 minutes, with no cloud account
 
@@ -20,6 +28,45 @@ make dev-down
 
 That is the same chart that runs the testnet follower, in `mode: test-validator`. It is also the
 portability proof — see [the infra contract](terraform/modules/README.md).
+
+## Measured results
+
+Agave 4.2.2 on kind, on a 12-core / 14 GB laptop, synced to Solana testnet.
+
+```
+READY   STATUS    RESTARTS   getHealth   lag
+2/2     Running   0          "ok"        33 slots
+```
+
+**Memory — peak 6.69 GiB**, with `--accounts-index-limit minimal`:
+
+| Phase | Memory |
+|---|---|
+| Snapshot download | ~1.2 GiB |
+| **Accounts index generation** | **6.69 GiB — peak** |
+| Bank loading | ~3.4 GiB |
+| Steady state, synced | ~5.5–6.5 GiB |
+
+Roughly **1/40th** of Anza's 256 GB mainnet guidance. The peak is a **startup transient**, not the
+steady state — size a pod on observed steady-state memory and it OOMs on its next restart, giving
+you a workload that runs fine until it reboots.
+
+**Disk — 53 GB after one hour:** accounts 33 GB, ledger 15 GB, snapshots 5 GB. Accounts dominates
+early, which is not the split the planning estimates assumed.
+
+**Time to sync:** ~45 minutes cold start to `Ready`, most of it a 5.3 GB snapshot fetch at
+6.4 MB/s plus an index build across 94,724 slots.
+
+**The observability chain, verified rather than assumed:**
+
+```
+serviceMonitor/default/solana-solana-node/0   health: UP
+app=solana   hostname=solana-dev-control-plane   lastError: (none)
+solana_node_slot_height 442209566
+```
+
+Both relabelings present in the *stored series*, not merely configured. Without them every panel
+and all six alert rules return "No data" with no error anywhere.
 
 ## Layout
 
@@ -38,8 +85,55 @@ rewriting the top half is never, because it never touches a cloud API.
 
 ## What I found that the internet has wrong
 
-Most of what is written about running Solana in containers is describing a version that no longer
-exists. Each of these cost time to discover:
+Most of what is written about running Solana in containers describes a version that no longer
+exists, or a default that is wrong outside mainnet. Every item here cost time to discover, and
+each is reproducible from this repo.
+
+### The two worth reading even if you never touch Solana
+
+**`--restricted-repair-only-mode` no longer starts on an Alpenglow cluster.** It is *the*
+documented fallback for a node that cannot accept inbound connections, and it is what this repo's
+own runbook recommended. On Agave 4.2.2 against testnet it fails after the full snapshot download
+and index build — about 25 minutes in — with:
+
+```
+INFO  local alpenglow address: 0.0.0.0:8011
+ERROR Failed to start validator: Invalid QUIC address for Alpenglow BLS
+```
+
+Repair-only suppresses advertising; Alpenglow then has no address to derive its QUIC endpoint
+from, falls back to the bind address, and rejects it. The error names QUIC, not the flag that
+caused it.
+
+**A `tcpSocket` probe can never pass against a loopback-bound service.** This chart binds RPC to
+`127.0.0.1` on purpose — an open Solana RPC endpoint is a documented abuse vector, and not
+listening beats a firewall rule. But kubelet dials probes from *outside* the container, at the pod
+IP (the node IP under `hostNetwork`), so the probe is refused forever while the node is perfectly
+healthy:
+
+```
+Startup probe failed: dial tcp 172.20.0.2:8899: connect: connection refused
+```
+
+The trap is that the exporter sidecar reaches the same port over loopback without trouble, because
+containers in a pod share a network namespace — kubelet does not. "The sidecar can reach it" tells
+you nothing about whether a probe can. `exec` probes run inside the container and work; `tcpSocket`
+and `httpGet` do not.
+
+### Agave defaults tuned for someone who is not you
+
+Three, all correct for a mainnet operator with money at stake, all wrong for a testnet follower:
+
+| Default | Consequence here |
+|---|---|
+| `--accounts-index-limit unlimited` | Keeps the entire accounts index resident. OOMs anything that is not a 256 GB box. |
+| XDP transmit **on** | Needs `CAP_NET_RAW` + `CAP_NET_ADMIN`. With capabilities dropped, the validator binds every socket, contacts IP-echo, *then* exits. A follower transmits almost nothing, so XDP buys it nothing. |
+| 10 MB/s snapshot floor, 5 aborts | Aborts a download below 10 MB/s and gives up after 5 tries. Observed 361 KB/s from the one peer `--only-known-rpc` allowed; five aborts burned in seven minutes after downloading 2.2 GB. Even a healthy 6.4 MB/s is below the floor. |
+
+The question worth asking of any default in infrastructure you did not write: **who is this
+protecting, and am I them?**
+
+### The rest
 
 - **`agave-validator` has not shipped in the release tarball since Agave 3.0.** Anza's own v3.0.2+
   release notes say so. Every tutorial doing `curl release.anza.xyz/... | tar x && ./bin/agave-validator`
@@ -90,7 +184,12 @@ Prometheus on `[tiles.metric] prometheus_listen_port`, documented as diagnostic-
 | A | Leave it running 22 days | $136.12 |
 | **B** | **Scale the node pool to 0 between sessions** | **$13.96** |
 
-Variant B is what `make pause` / `make resume` do. Actuals in [docs/cost-report.md](docs/cost-report.md).
+Variant B is what `make pause` / `make resume` do.
+
+**Actual spend: €0.00.** The OCI layer never launched compute — a free trial cannot, whatever the
+credit balance says ([ADR 0012](docs/decisions/0012-trial-cannot-launch-paid-compute.md)). The
+network, NSGs, budget guardrail and OKE cluster all applied cleanly and cost nothing; the node
+pool was refused. Details in [docs/cost-report.md](docs/cost-report.md).
 
 ## What would change for mainnet
 
