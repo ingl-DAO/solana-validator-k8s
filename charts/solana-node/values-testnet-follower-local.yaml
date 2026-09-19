@@ -13,13 +13,19 @@
 mode: follower
 cluster: testnet
 
-# Not required here. Repair-only mode means the node never advertises an address, so there is
-# nothing for hostNetwork to make reachable. The exporter still reaches RPC over loopback
-# because both containers share the pod's network namespace either way.
-hostNetwork: false
+# hostNetwork is on NOT for reachability - nothing can dial in through the NAT - but so the node
+# sees a real interface and IP-echo can resolve a routable advertised address. Alpenglow rejects
+# 0.0.0.0 as its QUIC address, which is what a pod IP plus repair-only mode produced.
+hostNetwork: true
 
 validator:
-  restrictedRepairOnly: true
+  # DISABLED, reluctantly. Repair-only is the textbook answer behind NAT, but in Agave 4.2.2 on an
+  # Alpenglow cluster it is fatal: the node stops advertising, Alpenglow has no address to derive
+  # its QUIC endpoint from, falls back to 0.0.0.0:8011 and startup fails with
+  #   Failed to start validator: Invalid QUIC address for Alpenglow BLS
+  # So the node must advertise. It will advertise an address nothing can reach, which is mildly
+  # antisocial - peers will attempt connections that time out - but it is the only way to start.
+  restrictedRepairOnly: false
   limitLedgerSize: 50000000        # the floor Agave permits; cannot go lower
   maximumLocalSnapshotAge: 1500
   healthCheckSlotDistance: 150
