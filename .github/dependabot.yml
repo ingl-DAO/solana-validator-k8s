@@ -1,25 +1,28 @@
+# The rust base image is PINNED to whatever anza-xyz/agave declares in rust-toolchain.toml at
+# the tag being built (1.96.1 for v4.2.2). Bumping it breaks the build with E0133 errors in
+# solana-core about 18 minutes in, so it is ignored here and changes only with AGAVE_VERSION.
 version: 2
 updates:
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: "ci: "
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: terraform
-    directory: /terraform
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: "terraform: "
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: docker
-    directory: /docker
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: "docker: "
-    open-pull-requests-limit: 5
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: weekly
+  commit-message:
+    prefix: 'ci: '
+  open-pull-requests-limit: 5
+- package-ecosystem: terraform
+  directory: /terraform
+  schedule:
+    interval: weekly
+  commit-message:
+    prefix: 'terraform: '
+  open-pull-requests-limit: 5
+- package-ecosystem: docker
+  directory: /docker
+  schedule:
+    interval: weekly
+  commit-message:
+    prefix: 'docker: '
+  open-pull-requests-limit: 5
+  ignore:
+  - dependency-name: rust

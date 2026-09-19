@@ -6,26 +6,30 @@ on:
     branches:
       - main
 
+# NOTE: there is deliberately no job that runs `terraform plan` against real OCI credentials.
+# The cloud environment is short-lived (see docs/decisions/0012), and a permanently red badge
+# would undo the credibility that docs/evidence/ is meant to buy.
+
+permissions:
+  contents: read
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
-      - name: Terraform Format Check
+      - name: Format check
         run: terraform fmt -check -recursive
         working-directory: terraform
-      - name: Terraform Init (modules/oci-oke)
-        run: terraform init -backend=false
+      # `-backend=false` still honours the committed .terraform.lock.hcl, so a provider constraint
+      # that excludes the locked version fails here while working locally, where .terraform is
+      # already populated. Keep versions.tf and both lockfiles in step.
+      - name: Init and validate (modules/oci-oke)
+        run: terraform init -backend=false && terraform validate
         working-directory: terraform/modules/oci-oke
-      - name: Terraform Validate (modules/oci-oke)
-        run: terraform validate
-        working-directory: terraform/modules/oci-oke
-      - name: Terraform Init (envs/oci-testnet)
-        run: terraform init -backend=false
-        working-directory: terraform/envs/oci-testnet
-      - name: Terraform Validate (envs/oci-testnet)
-        run: terraform validate
+      - name: Init and validate (envs/oci-testnet)
+        run: terraform init -backend=false && terraform validate
         working-directory: terraform/envs/oci-testnet
 
   helm:
@@ -33,20 +37,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
-      - name: Helm Lint
-        run: helm lint charts/solana-node
-      - name: Helm Template (values-test-validator.yaml)
-        run: helm template solana-node charts/solana-node -f charts/solana-node/values-test-validator.yaml > /tmp/test-validator-manifest.yaml
-      - name: Helm Template (values-testnet-follower.yaml)
-        run: helm template solana-node charts/solana-node -f charts/solana-node/values-testnet-follower.yaml > /tmp/testnet-follower-manifest.yaml
+
+      # Lint each real profile rather than the bare defaults. values.yaml alone has no
+      # storageClassName, which the chart's own guard rejects by design.
+      - name: Lint (test-validator)
+        run: helm lint charts/solana-node -f charts/solana-node/values-test-validator.yaml
+      - name: Lint (testnet-follower)
+        run: helm lint charts/solana-node -f charts/solana-node/values-testnet-follower.yaml
+      - name: Lint (testnet-follower-local)
+        run: helm lint charts/solana-node -f charts/solana-node/values-testnet-follower-local.yaml
+
+      - name: Render all profiles
+        run: |
+          mkdir -p /tmp/manifests
+          for v in test-validator testnet-follower testnet-follower-local; do
+            helm template solana-node charts/solana-node \
+              -f "charts/solana-node/values-$v.yaml" > "/tmp/manifests/$v.yaml"
+          done
+
+      - name: Assert the chart's guard rails still fire
+        run: |
+          set +e
+          # follower without hostNetwork and without repair-only must be REJECTED
+          out=$(helm template solana-node charts/solana-node \
+                  -f charts/solana-node/values-testnet-follower.yaml \
+                  --set hostNetwork=false 2>&1)
+          if [ $? -eq 0 ]; then
+            echo "::error::guard did not fire: follower rendered without hostNetwork"; exit 1
+          fi
+          echo "$out" | grep -q 'hostNetwork=true' || { echo "::error::wrong failure message"; exit 1; }
+
+          # missing storageClassName must be REJECTED
+          out=$(helm template solana-node charts/solana-node 2>&1)
+          if [ $? -eq 0 ]; then
+            echo "::error::guard did not fire: rendered with no storageClassName"; exit 1
+          fi
+          echo "$out" | grep -q 'storageClassName' || { echo "::error::wrong failure message"; exit 1; }
+          echo "both guards fired as expected"
+
       - name: Install kubeconform
         run: |
           curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
-      - name: Validate with kubeconform (test-validator)
-        run: kubeconform -strict -summary -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' /tmp/test-validator-manifest.yaml
-      - name: Validate with kubeconform (testnet-follower)
-        run: kubeconform -strict -summary -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' /tmp/testnet-follower-manifest.yaml
+
+      # `-schema-location` REPLACES the built-in default rather than adding to it, so passing only
+      # the CRD catalog makes every core type (Service, ConfigMap, StatefulSet) fail with
+      # "could not find schema". `default` must come first.
+      - name: Validate manifests
+        run: |
+          kubeconform -strict -summary \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            /tmp/manifests/*.yaml
 
   chart-test:
     runs-on: ubuntu-latest
@@ -61,6 +103,7 @@ jobs:
           command: lint
           charts: charts/solana-node
       - uses: helm/kind-action@v1
+      # test-validator mode only: it needs no cloud, no hostNetwork and no public address.
       - name: Chart Testing install
         uses: helm/chart-testing-action@v2
         with:
@@ -70,26 +113,35 @@ jobs:
 
   security:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # required by upload-sarif
     steps:
       - uses: actions/checkout@v4
-      - name: Run Checkov on Terraform
+
+      # Custom policies live in policies/ and need its __init__.py to load — without it checkov
+      # skips the directory and reports success having run none of them.
+      - name: Checkov
         uses: bridgecrewio/checkov-action@master
         with:
           directory: terraform
           framework: terraform
           external_checks_dir: policies
-      - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
           format: sarif
           output: trivy-results.sarif
-      - name: Upload Trivy results to GitHub Security tab
+
+      - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
-      - name: Run Hadolint on Dockerfile
+
+      - name: Hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: docker/Dockerfile
