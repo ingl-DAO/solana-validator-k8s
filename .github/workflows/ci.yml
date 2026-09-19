@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
 
       # Lint each real profile rather than the bare defaults. values.yaml alone has no
       # storageClassName, which the chart's own guard rejects by design.
@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
       - name: Chart Testing lint
         uses: helm/chart-testing-action@v2
         with:
