@@ -56,7 +56,7 @@ data:
       --wal-recovery-mode skip_any_corrupted_record \
       --limit-ledger-size {{ .Values.validator.limitLedgerSize | int64 }} \
       --maximum-local-snapshot-age {{ .Values.validator.maximumLocalSnapshotAge | int64 }} \
-      --accounts-index-memory-limit-mb {{ .Values.validator.accountsIndexMemoryLimitMb | int64 }} \
+      --accounts-index-limit {{ .Values.validator.accountsIndexLimit }} \
 {{- if eq .Values.advertisedAddress.strategy "static" }}
       --advertised-ip {{ required "advertisedAddress.staticIp required when strategy=static" .Values.advertisedAddress.staticIp }} \
 {{- end }}

@@ -23,9 +23,9 @@ validator:
   limitLedgerSize: 50000000        # the floor Agave permits; cannot go lower
   maximumLocalSnapshotAge: 1500
   healthCheckSlotDistance: 150
-  # 16000 on the cloud profile. Testnet's account set is small and this is the single biggest
-  # lever on resident memory, so it is cut hard here.
-  accountsIndexMemoryLimitMb: 1500
+  # `minimal` is the smallest the enum allows. Everything beyond it goes to the disk-backed
+  # index: slower, but the only way this fits on a 14GB host. The cloud profile uses 25GB.
+  accountsIndexLimit: minimal
 
 persistence:
   enabled: true

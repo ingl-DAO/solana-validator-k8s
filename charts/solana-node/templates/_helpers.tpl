@@ -37,6 +37,10 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if and (eq .Values.mode "follower") (not .Values.hostNetwork) (not .Values.validator.restrictedRepairOnly) -}}
 {{- fail "mode=follower requires hostNetwork=true, because peers must reach the node at the address it advertises. The one exception is validator.restrictedRepairOnly=true, where the node deliberately does not advertise and syncs via repair instead — correct behind NAT. See docs/decisions/0005-hostnetwork-vs-nlb-vs-nodeport.md" -}}
 {{- end -}}
+{{- $allowed := list "minimal" "25GB" "50GB" "100GB" "200GB" "400GB" "800GB" "unlimited" -}}
+{{- if not (has (toString .Values.validator.accountsIndexLimit) $allowed) -}}
+{{- fail (printf "validator.accountsIndexLimit must be one of %v, got %s. Agave rejects unknown values at startup, so this would CrashLoop." $allowed (toString .Values.validator.accountsIndexLimit)) -}}
+{{- end -}}
 {{- if and .Values.persistence.enabled (eq .Values.persistence.storageClassName "") -}}
 {{- fail "persistence.storageClassName must be set by the infra layer — this chart never defines a StorageClass. See terraform/modules/README.md" -}}
 {{- end -}}

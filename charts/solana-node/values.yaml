@@ -81,7 +81,17 @@ validator:
   # same setting would cost a 65.9 GB download every morning.
   maximumLocalSnapshotAge: 1500
   healthCheckSlotDistance: 150
-  accountsIndexMemoryLimitMb: 16000
+  # --accounts-index-limit. NOT a number of megabytes: an ENUM.
+  # Allowed: minimal | 25GB | 50GB | 100GB | 200GB | 400GB | 800GB | unlimited
+  #
+  # The Agave DEFAULT is `unlimited`, which keeps the entire accounts index resident. That is
+  # right for a mainnet box with 256GB and catastrophic anywhere smaller, so it is always set
+  # explicitly here. Entries beyond the limit go to the disk-backed index, which is slower.
+  #
+  # (An earlier revision passed --accounts-index-memory-limit-mb, which does not exist in 4.2.2.
+  #  agave-validator rejects unknown flags at startup, so the pod CrashLoops immediately rather
+  #  than ignoring it.)
+  accountsIndexLimit: 25GB
   # Sync without being reachable. The node stops advertising Gossip/TPU/TVU/Repair ports it
   # cannot serve and pulls blocks via repair instead. It still syncs to tip and still exports
   # every metric; it simply is not a gossip participant, so peer count stays at 0 by design.
