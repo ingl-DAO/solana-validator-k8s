@@ -376,8 +376,24 @@ sudo ./scripts/tune-host.sh -w      # until reboot
 sudo ./scripts/tune-host.sh -p      # and persist via /etc/sysctl.d
 ```
 
-The values are standard larger socket buffers, not Solana-specific, and the script prints the
-exact revert command.
+**What exactly is being changed.** The validator checks four sysctls and no others — extracted
+from the binary rather than taken from the docs:
+
+```bash
+grep -aoE '(net\.core\.[a-z_]+){2,}' agave-validator
+# net.core.rmem_max  net.core.wmem_max  net.core.optmem_max  net.core.netdev_max_backlog
+```
+
+All four are **ceilings**. `rmem_max`/`wmem_max` cap how large a socket buffer an application may
+request via `setsockopt(SO_RCVBUF/SO_SNDBUF)`; raising the cap allocates nothing and changes
+nothing for a process that does not ask. `netdev_max_backlog` is the packet queue depth per CPU
+for inbound frames awaiting processing — 30000 is the conventional value on any network-heavy
+host.
+
+`net.core.rmem_default` / `wmem_default` are **deliberately not set** here. Anza's tuning guide
+lists them and the cloud node-pool init applies them, but the validator does not check them, and
+unlike the ceilings they change the default buffer size for *every socket on the machine*. On a
+workstation that is a real behavioural change for no benefit.
 
 **Note on memlock.** You will also see `Unable to increase the maximum memory lock limit to
 2000000000 from 8388608`. That is an rlimit rather than a sysctl, it is a WARN not a fatal, and
