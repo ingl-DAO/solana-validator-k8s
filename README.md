@@ -89,7 +89,7 @@ Most of what is written about running Solana in containers describes a version t
 exists, or a default that is wrong outside mainnet. Every item here cost time to discover, and
 each is reproducible from this repo.
 
-### The two worth reading even if you never touch Solana
+### The three worth reading even if you never touch Solana
 
 **`--restricted-repair-only-mode` no longer starts on an Alpenglow cluster.** It is *the*
 documented fallback for a node that cannot accept inbound connections, and it is what this repo's
@@ -120,6 +120,31 @@ containers in a pod share a network namespace — kubelet does not. "The sidecar
 you nothing about whether a probe can. `exec` probes run inside the container and work; `tcpSocket`
 and `httpGet` do not.
 
+**Two correct flags, jointly fatal: `--only-known-rpc` and the snapshot speed floor.**
+
+The chart passes `--only-known-rpc` with three `--known-validator` pubkeys. That restricts snapshot
+and RPC fetches to those operators only. It is the right posture: a snapshot *is* the state you
+start from, so downloading one from an arbitrary peer means trusting a stranger's view of the
+ledger. For a validator with stake at risk, it is the difference between joining the real chain and
+joining someone's fork.
+
+Separately, Agave aborts any snapshot download slower than `--minimal-snapshot-download-speed`
+(10 MB/s) and gives up after `--maximum-snapshot-download-abort` (5) attempts. Also right on its
+own terms: a snapshot fetched too slowly leaves more slots to replay than you can catch up on, so
+failing fast beats discovering non-convergence an hour later.
+
+Together they guarantee failure on a domestic connection. `--only-known-rpc` collapses the peer
+pool from hundreds to three — often to *one*, since not all of them hold a recent snapshot — and
+the speed floor then applies to that single pinned peer with nowhere better to retry to. Observed
+here: **361 KB/s**, 28× below the floor, five aborts burned in seven minutes after downloading
+2.2 GB, one attempt from failing outright. A 10 MB/s demand is reasonable of *the best of 300
+peers* and unreasonable of *one specific peer you have pinned yourself to*.
+
+Neither flag is wrong. The composition is. This repo keeps `--only-known-rpc` — the trust posture
+is correct and a testnet re-sync costs nothing — and lowers the floor to 128 KB/s with 30 retries
+instead. The generalisable shape is the same one the probe bug had: **two individually correct
+decisions whose interaction nobody tested**, and the failure names neither of them.
+
 ### Agave defaults tuned for someone who is not you
 
 Three, all correct for a mainnet operator with money at stake, all wrong for a testnet follower:
@@ -128,7 +153,7 @@ Three, all correct for a mainnet operator with money at stake, all wrong for a t
 |---|---|
 | `--accounts-index-limit unlimited` | Keeps the entire accounts index resident. OOMs anything that is not a 256 GB box. |
 | XDP transmit **on** | Needs `CAP_NET_RAW` + `CAP_NET_ADMIN`. With capabilities dropped, the validator binds every socket, contacts IP-echo, *then* exits. A follower transmits almost nothing, so XDP buys it nothing. |
-| 10 MB/s snapshot floor, 5 aborts | Aborts a download below 10 MB/s and gives up after 5 tries. Observed 361 KB/s from the one peer `--only-known-rpc` allowed; five aborts burned in seven minutes after downloading 2.2 GB. Even a healthy 6.4 MB/s is below the floor. |
+| 10 MB/s snapshot floor, 5 aborts | Covered above — even a healthy 6.4 MB/s is below the floor, and `--only-known-rpc` removes anywhere better to retry to. |
 
 The question worth asking of any default in infrastructure you did not write: **who is this
 protecting, and am I them?**
