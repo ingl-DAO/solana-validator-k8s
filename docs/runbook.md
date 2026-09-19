@@ -349,3 +349,37 @@ helm upgrade ... --set imagePullSecrets[0].name=ghcr
 Note the token needs `read:packages`, and `gh auth refresh -s write:packages` is what grants the
 push side — a token that can `docker login` successfully may still be unable to push, because
 login only exercises read.
+
+
+## "OS network limit test failed" on kind / k3d
+
+**Symptom.** The validator binds every socket, then exits:
+
+```
+WARN  net.core.rmem_max: recommended=134217728, current=4194304 too small
+Validator command failed: OS network limit test failed.
+```
+
+**Diagnosis.** `net.core.*` are **not network-namespaced**. A kind "node" is a container, so it
+reads the *host's* values — and there is no cloud-init hook to tune them the way
+`terraform/modules/oci-oke/cloud-init/worker-init.sh` does on a real node pool. Agave has no flag
+to skip the check.
+
+```bash
+make tune-host          # shows current vs required
+```
+
+**Fix.** Change them on the host:
+
+```bash
+sudo ./scripts/tune-host.sh -w      # until reboot
+sudo ./scripts/tune-host.sh -p      # and persist via /etc/sysctl.d
+```
+
+The values are standard larger socket buffers, not Solana-specific, and the script prints the
+exact revert command.
+
+**Note on memlock.** You will also see `Unable to increase the maximum memory lock limit to
+2000000000 from 8388608`. That is an rlimit rather than a sysctl, it is a WARN not a fatal, and
+the validator continues. On a real node the containerd drop-in sets `LimitMEMLOCK=infinity`; under
+kind it would need `--ulimit memlock=-1` on the node container.

@@ -47,6 +47,10 @@ preflight:
 	docker info >/dev/null 2>&1 || { echo "Docker daemon not reachable."; exit 1; }
 	@echo "preflight ok"
 
+.PHONY: tune-host
+tune-host: ## Show the host sysctls a real validator needs (kind has no cloud-init)
+	@./scripts/tune-host.sh --show
+
 .PHONY: follower-local
 follower-local: preflight ## Real testnet node on kind, behind NAT (repair-only). Needs ~10GB free RAM.
 	@kind get clusters 2>/dev/null | grep -qx $(KIND_NAME) \
