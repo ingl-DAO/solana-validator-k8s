@@ -50,6 +50,9 @@ data:
       --bind-address 0.0.0.0 \
       --dynamic-port-range {{ .Values.ports.p2pMin }}-{{ .Values.ports.p2pMax }} \
       --no-port-check \
+{{- if .Values.validator.restrictedRepairOnly }}
+      --restricted-repair-only-mode \
+{{- end }}
       --wal-recovery-mode skip_any_corrupted_record \
       --limit-ledger-size {{ .Values.validator.limitLedgerSize | int64 }} \
       --maximum-local-snapshot-age {{ .Values.validator.maximumLocalSnapshotAge | int64 }} \

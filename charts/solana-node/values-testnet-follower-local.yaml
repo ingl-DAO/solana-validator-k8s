@@ -1,0 +1,48 @@
+# Tier 2, run locally: a real Solana testnet node on kind, on a laptop, behind NAT.
+#
+# WHAT THIS PROVES               real sync to tip, real RPC, real exporter metrics, real
+#                                Grafana time series, the whole StatefulSet/PVC/probe stack
+# WHAT IT CANNOT PROVE           gossip reachability. Peer count stays 0 BY DESIGN — the node
+#                                does not advertise, so nothing dials it. No public IP, no
+#                                "seen in cluster gossip" evidence, no cloud IaC.
+#
+# Sized for a 14 GB host. The cloud profile asks for 48-72 GB; this is deliberately far below
+# that and may not be enough. If the pod is OOMKilled, that is a finding worth writing down:
+# it establishes the real memory floor for a testnet follower.
+
+mode: follower
+cluster: testnet
+
+# Not required here. Repair-only mode means the node never advertises an address, so there is
+# nothing for hostNetwork to make reachable. The exporter still reaches RPC over loopback
+# because both containers share the pod's network namespace either way.
+hostNetwork: false
+
+validator:
+  restrictedRepairOnly: true
+  limitLedgerSize: 50000000        # the floor Agave permits; cannot go lower
+  maximumLocalSnapshotAge: 1500
+  healthCheckSlotDistance: 150
+  # 16000 on the cloud profile. Testnet's account set is small and this is the single biggest
+  # lever on resident memory, so it is cut hard here.
+  accountsIndexMemoryLimitMb: 1500
+
+persistence:
+  enabled: true
+  storageClassName: standard       # kind's default local-path provisioner
+  size: 80Gi
+  accounts:
+    enabled: false                 # one volume on a laptop; no separate spindle to gain from
+
+resources:
+  requests: { cpu: "4", memory: 5Gi }
+  limits:   { memory: 9Gi }        # leaves headroom for the OS, Docker and the k8s control plane
+
+exporter:
+  enabled: true
+  lightMode: true
+
+monitoring:
+  serviceMonitor: { enabled: true }
+  prometheusRule: { enabled: true }
+  dashboard: { enabled: true }

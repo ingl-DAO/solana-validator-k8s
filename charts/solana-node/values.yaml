@@ -82,6 +82,13 @@ validator:
   maximumLocalSnapshotAge: 1500
   healthCheckSlotDistance: 150
   accountsIndexMemoryLimitMb: 16000
+  # Sync without being reachable. The node stops advertising Gossip/TPU/TVU/Repair ports it
+  # cannot serve and pulls blocks via repair instead. It still syncs to tip and still exports
+  # every metric; it simply is not a gossip participant, so peer count stays at 0 by design.
+  #
+  # This is the correct mode behind NAT (a laptop, a home connection) and the documented fallback
+  # when inbound UDP cannot be made to work. It implies --no-voting.
+  restrictedRepairOnly: false
   extraFlags: []
 
 resources:

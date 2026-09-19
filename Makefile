@@ -2,6 +2,7 @@ SHELL      := /bin/bash
 CHART      := charts/solana-node
 ENV        := terraform/envs/oci-testnet
 KIND_NAME  := solana-dev
+KPS_VERSION := 91.4.1
 RELEASE    := solana
 
 .DEFAULT_GOAL := help
@@ -25,6 +26,29 @@ dev-down: ## Delete the kind cluster
 	kind delete cluster --name $(KIND_NAME)
 
 # --- quality -----------------------------------------------------------------------------------
+.PHONY: follower-local
+follower-local: ## Real testnet node on kind, behind NAT (repair-only). Needs ~10GB free RAM.
+	kind create cluster --config terraform/local/kind-cluster.yaml || true
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
+	helm repo update >/dev/null
+	helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+	  --version $(KPS_VERSION) --namespace monitoring --create-namespace \
+	  -f deploy/monitoring/kube-prometheus-stack-values.yaml --wait --timeout 15m
+	kubectl get secret $(RELEASE)-solana-node-identity >/dev/null 2>&1 || ( \
+	  tmp=$$(mktemp -d); \
+	  docker run --rm -v $$tmp:/out --entrypoint solana-keygen ghcr.io/marcjazz/agave:4.2.2 \
+	    new --no-bip39-passphrase -s -o /out/identity.json >/dev/null; \
+	  kubectl create secret generic $(RELEASE)-solana-node-identity --from-file=identity.json=$$tmp/identity.json; \
+	  rm -rf $$tmp )
+	helm upgrade --install $(RELEASE) $(CHART) -f $(CHART)/values-testnet-follower-local.yaml --timeout 20m
+	@echo
+	@echo "Deployed. It will be NOT READY for a long time - snapshot fetch, unpack, then replay."
+	@echo "  kubectl logs sts/$(RELEASE)-solana-node -c validator -f"
+	@echo "  kubectl exec sts/$(RELEASE)-solana-node -c validator -- solana catchup --our-localhost 8899"
+	@echo
+	@echo "Watch for OOMKilled - 9Gi is a guess, not a measurement:"
+	@echo "  kubectl get pod -l app.kubernetes.io/name=solana-node -w"
+
 .PHONY: lint
 lint: ## terraform fmt/validate + helm lint + kubeconform
 	terraform -chdir=$(ENV) fmt -check -recursive
