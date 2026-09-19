@@ -87,12 +87,17 @@ spec:
           exec:
             command: ["/bin/bash", "/probes/startup.sh"]
           periodSeconds: 10
+          # MUST exceed the curl -m inside the script. timeoutSeconds defaults to 1, so kubelet
+          # would kill a probe the script still considers in progress, and a slow-but-healthy RPC
+          # answer would count as a failure.
+          timeoutSeconds: 6
           failureThreshold: {{ if eq .Values.mode "test-validator" }}30{{ else }}720{{ end }}
         readinessProbe:
           exec:
             command: ["/bin/bash", "/probes/readiness.sh"]
           periodSeconds: 10
-          timeoutSeconds: 5
+          # readiness.sh makes TWO curl calls at -m 4 each, so 5s was already too tight.
+          timeoutSeconds: 10
           failureThreshold: 2
         # NO livenessProbe, deliberately. A catching-up node is unready, never unhealthy. A
         # liveness probe tied to sync progress restart-loops forever, and every restart costs
