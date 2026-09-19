@@ -14,8 +14,10 @@ help: ## Show this help
 
 # --- local, no cloud ---------------------------------------------------------------------------
 .PHONY: dev-up
-dev-up: ## kind cluster + chart in test-validator mode. No cloud credentials needed.
-	kind create cluster --config terraform/local/kind-cluster.yaml || true
+dev-up: preflight ## kind cluster + chart in test-validator mode. No cloud credentials needed.
+	@kind get clusters 2>/dev/null | grep -qx $(KIND_NAME) \
+	  && echo "cluster $(KIND_NAME) exists, reusing" \
+	  || kind create cluster --config terraform/local/kind-cluster.yaml
 	helm upgrade --install $(RELEASE) $(CHART) \
 	  -f $(CHART)/values-test-validator.yaml \
 	  --set persistence.storageClassName=standard \
@@ -26,9 +28,30 @@ dev-down: ## Delete the kind cluster
 	kind delete cluster --name $(KIND_NAME)
 
 # --- quality -----------------------------------------------------------------------------------
+# Fail on a missing tool instead of letting `|| true` swallow it and surface three steps later
+# as "kubernetes cluster unreachable", which points at the wrong thing entirely.
+.PHONY: preflight
+preflight:
+	@missing=""; \
+	for b in docker kubectl helm kind; do \
+	  command -v $$b >/dev/null 2>&1 || missing="$$missing $$b"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+	  echo "Missing required tools:$$missing"; \
+	  echo; \
+	  echo "  kind     curl -sSLo ~/.local/bin/kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64 && chmod +x ~/.local/bin/kind"; \
+	  echo "  kubectl  https://kubernetes.io/docs/tasks/tools/"; \
+	  echo "  helm     https://helm.sh/docs/intro/install/"; \
+	  exit 1; \
+	fi; \
+	docker info >/dev/null 2>&1 || { echo "Docker daemon not reachable."; exit 1; }
+	@echo "preflight ok"
+
 .PHONY: follower-local
-follower-local: ## Real testnet node on kind, behind NAT (repair-only). Needs ~10GB free RAM.
-	kind create cluster --config terraform/local/kind-cluster.yaml || true
+follower-local: preflight ## Real testnet node on kind, behind NAT (repair-only). Needs ~10GB free RAM.
+	@kind get clusters 2>/dev/null | grep -qx $(KIND_NAME) \
+	  && echo "cluster $(KIND_NAME) exists, reusing" \
+	  || kind create cluster --config terraform/local/kind-cluster.yaml
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
 	helm repo update >/dev/null
 	helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
