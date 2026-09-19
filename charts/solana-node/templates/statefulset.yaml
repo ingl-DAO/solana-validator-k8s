@@ -33,6 +33,17 @@ spec:
         # after a multi-GB download — not a clean refusal at process start.
         seccompProfile:
           type: Unconfined
+        # The image runs as uid 10001. Without fsGroup, both the identity Secret and the ledger
+        # PVC are mounted root-owned and the validator cannot read or write them:
+        #   error: Invalid value for '--identity <KEYPAIR>': Permission denied (os error 13)
+        # fsGroup makes the volumes group-owned by this gid; the Secret's mode must then grant
+        # group read (0440, not 0400).
+        runAsUser: {{ .Values.podSecurity.runAsUser }}
+        runAsGroup: {{ .Values.podSecurity.runAsGroup }}
+        fsGroup: {{ .Values.podSecurity.fsGroup }}
+        # Without this, Kubernetes recursively chowns the ENTIRE volume on every start. Harmless
+        # on an empty PVC; on a 250GB ledger it adds minutes to each restart.
+        fsGroupChangePolicy: OnRootMismatch
       affinity:
 {{- if .Values.affinity }}
 {{- toYaml .Values.affinity | nindent 8 }}
@@ -136,7 +147,9 @@ spec:
       - name: keys
         secret:
           secretName: {{ include "solana-node.fullname" . }}-identity
-          defaultMode: 0400
+          # 0440, not 0400: fsGroup grants access via the GROUP bits, so the owner-only mode
+          # leaves the file unreadable to the non-root uid the container runs as.
+          defaultMode: 0440
 {{- end }}
 {{- if not .Values.persistence.enabled }}
       - name: data

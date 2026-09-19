@@ -147,6 +147,13 @@ monitoring:
 nodeTuner:
   enabled: false
 
+# Must match the uid/gid baked into the image (USER 10001 in docker/Dockerfile). fsGroup is what
+# makes the mounted Secret and PVC accessible to a non-root process.
+podSecurity:
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
 podDisruptionBudget:
   enabled: true
   maxUnavailable: 1
