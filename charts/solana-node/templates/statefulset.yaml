@@ -66,10 +66,14 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command: ["/bin/bash", "/flags/run.sh"]
         securityContext:
-          # Agave 4.0+ drops permitted-but-unneeded capabilities at startup and exits(1) on a
-          # MISSING required one. No XDP here, so no NET_RAW/NET_ADMIN/BPF/PERFMON are needed.
+          # Agave 4.0+ exits(1) on a MISSING required capability. XDP transmit is ON BY DEFAULT
+          # and needs NET_RAW + NET_ADMIN, so either it is disabled (validator.disableXdp, the
+          # default) or those capabilities must be added here.
           capabilities:
             drop: ["ALL"]
+{{- with .Values.podSecurity.capabilities.add }}
+            add: {{- toYaml . | nindent 14 }}
+{{- end }}
           allowPrivilegeEscalation: false
         ports:
         - { name: rpc, containerPort: {{ .Values.ports.rpc }}, protocol: TCP }

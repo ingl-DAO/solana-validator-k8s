@@ -99,6 +99,17 @@ validator:
   # This is the correct mode behind NAT (a laptop, a home connection) and the documented fallback
   # when inbound UDP cannot be made to work. It implies --no-voting.
   restrictedRepairOnly: false
+
+  # Agave 4.x enables XDP transmit BY DEFAULT, and XDP needs CAP_NET_RAW + CAP_NET_ADMIN. With
+  # the capabilities dropped (as they are here) the validator binds every socket, contacts
+  # IP-echo, and only THEN exits:
+  #   ERROR the current configuration requires the following capabilities, which have not been
+  #   permitted to the current process: [CAP_NET_RAW, CAP_NET_ADMIN]
+  #
+  # XDP is a transmit-path optimisation for pushing transactions. A non-voting follower sends
+  # almost nothing, so it buys nothing here and costs two powerful capabilities. Disabled.
+  # To enable it, set this false AND add the capabilities under podSecurity.capabilities.add.
+  disableXdp: true
   extraFlags: []
 
 resources:
@@ -153,6 +164,9 @@ podSecurity:
   runAsUser: 10001
   runAsGroup: 10001
   fsGroup: 10001
+  capabilities:
+    # Only needed if validator.disableXdp is false: ["NET_RAW", "NET_ADMIN"]
+    add: []
 
 podDisruptionBudget:
   enabled: true

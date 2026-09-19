@@ -53,6 +53,9 @@ data:
 {{- if .Values.validator.restrictedRepairOnly }}
       --restricted-repair-only-mode \
 {{- end }}
+{{- if .Values.validator.disableXdp }}
+      --no-xdp \
+{{- end }}
       --wal-recovery-mode skip_any_corrupted_record \
       --limit-ledger-size {{ .Values.validator.limitLedgerSize | int64 }} \
       --maximum-local-snapshot-age {{ .Values.validator.maximumLocalSnapshotAge | int64 }} \
