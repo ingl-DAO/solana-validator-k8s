@@ -57,12 +57,7 @@ follower-local: preflight ## Real testnet node on kind, behind NAT (repair-only)
 	helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
 	  --version $(KPS_VERSION) --namespace monitoring --create-namespace \
 	  -f deploy/monitoring/kube-prometheus-stack-values.yaml --wait --timeout 15m
-	kubectl get secret $(RELEASE)-solana-node-identity >/dev/null 2>&1 || ( \
-	  tmp=$$(mktemp -d); \
-	  docker run --rm -v $$tmp:/out --entrypoint solana-keygen ghcr.io/marcjazz/agave:4.2.2 \
-	    new --no-bip39-passphrase -s -o /out/identity.json >/dev/null; \
-	  kubectl create secret generic $(RELEASE)-solana-node-identity --from-file=identity.json=$$tmp/identity.json; \
-	  rm -rf $$tmp )
+	RELEASE=$(RELEASE) ./scripts/ensure-identity.sh
 	helm upgrade --install $(RELEASE) $(CHART) -f $(CHART)/values-testnet-follower-local.yaml --timeout 20m
 	@echo
 	@echo "Deployed. It will be NOT READY for a long time - snapshot fetch, unpack, then replay."
