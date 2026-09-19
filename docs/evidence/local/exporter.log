@@ -1,0 +1,200 @@
+{"level":"info","ts":"2026-09-19T10:27:54.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208693"}
+{"level":"info","ts":"2026-09-19T10:27:54.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208664 -> 442208693"}
+{"level":"info","ts":"2026-09-19T10:27:57.420Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:27:57.420Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:27:57.421Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:27:57.421Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:27:57.421Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:27:57.421Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:27:57.422Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:27:57.422Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:27:59.038Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208718"}
+{"level":"info","ts":"2026-09-19T10:27:59.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208693 -> 442208718"}
+{"level":"info","ts":"2026-09-19T10:28:04.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208747"}
+{"level":"info","ts":"2026-09-19T10:28:04.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208718 -> 442208747"}
+{"level":"info","ts":"2026-09-19T10:28:09.043Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208774"}
+{"level":"info","ts":"2026-09-19T10:28:09.043Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208747 -> 442208774"}
+{"level":"info","ts":"2026-09-19T10:28:12.427Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:28:12.427Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:28:12.428Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:28:12.428Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:28:12.432Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:28:12.432Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:28:12.435Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:28:12.436Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:28:14.037Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208803"}
+{"level":"info","ts":"2026-09-19T10:28:14.037Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208774 -> 442208803"}
+{"level":"info","ts":"2026-09-19T10:28:19.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208828"}
+{"level":"info","ts":"2026-09-19T10:28:19.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208803 -> 442208828"}
+{"level":"info","ts":"2026-09-19T10:28:24.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208856"}
+{"level":"info","ts":"2026-09-19T10:28:24.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208828 -> 442208856"}
+{"level":"info","ts":"2026-09-19T10:28:27.420Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:28:27.420Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:28:27.421Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:28:27.421Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:28:27.421Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:28:27.421Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:28:27.422Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:28:27.422Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:28:29.038Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208876"}
+{"level":"info","ts":"2026-09-19T10:28:29.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208856 -> 442208876"}
+{"level":"info","ts":"2026-09-19T10:28:34.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208895"}
+{"level":"info","ts":"2026-09-19T10:28:34.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208876 -> 442208895"}
+{"level":"info","ts":"2026-09-19T10:28:39.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208933"}
+{"level":"info","ts":"2026-09-19T10:28:39.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208895 -> 442208933"}
+{"level":"info","ts":"2026-09-19T10:28:42.421Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:28:42.421Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:28:42.422Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:28:42.422Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:28:42.422Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:28:42.422Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:28:42.423Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:28:42.423Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:28:44.038Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208960"}
+{"level":"info","ts":"2026-09-19T10:28:44.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208933 -> 442208960"}
+{"level":"info","ts":"2026-09-19T10:28:49.040Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442208980"}
+{"level":"info","ts":"2026-09-19T10:28:49.040Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208960 -> 442208980"}
+{"level":"info","ts":"2026-09-19T10:28:54.042Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209004"}
+{"level":"info","ts":"2026-09-19T10:28:54.042Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442208980 -> 442209004"}
+{"level":"info","ts":"2026-09-19T10:28:57.425Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:28:57.425Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:28:57.428Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:28:57.428Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:28:57.431Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:28:57.431Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:28:57.432Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:28:57.433Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:28:59.036Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209038"}
+{"level":"info","ts":"2026-09-19T10:28:59.037Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209004 -> 442209038"}
+{"level":"info","ts":"2026-09-19T10:29:04.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209060"}
+{"level":"info","ts":"2026-09-19T10:29:04.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209038 -> 442209060"}
+{"level":"info","ts":"2026-09-19T10:29:09.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209089"}
+{"level":"info","ts":"2026-09-19T10:29:09.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209060 -> 442209089"}
+{"level":"info","ts":"2026-09-19T10:29:12.421Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:29:12.421Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:29:12.421Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:29:12.421Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:29:12.422Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:29:12.422Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:29:12.423Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:29:12.423Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:29:14.038Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209115"}
+{"level":"info","ts":"2026-09-19T10:29:14.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209089 -> 442209115"}
+{"level":"info","ts":"2026-09-19T10:29:19.042Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209143"}
+{"level":"info","ts":"2026-09-19T10:29:19.042Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209115 -> 442209143"}
+{"level":"info","ts":"2026-09-19T10:29:24.040Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209169"}
+{"level":"info","ts":"2026-09-19T10:29:24.040Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209143 -> 442209169"}
+{"level":"info","ts":"2026-09-19T10:29:27.420Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:29:27.420Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:29:27.421Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:29:27.421Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:29:27.422Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:29:27.422Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:29:27.422Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:29:27.422Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:29:29.037Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209195"}
+{"level":"info","ts":"2026-09-19T10:29:29.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209169 -> 442209195"}
+{"level":"info","ts":"2026-09-19T10:29:34.051Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209222"}
+{"level":"info","ts":"2026-09-19T10:29:34.051Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209195 -> 442209222"}
+{"level":"info","ts":"2026-09-19T10:29:39.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209251"}
+{"level":"info","ts":"2026-09-19T10:29:39.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209222 -> 442209251"}
+{"level":"info","ts":"2026-09-19T10:29:42.423Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:29:42.423Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:29:42.425Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:29:42.425Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:29:42.425Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:29:42.425Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:29:42.429Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:29:42.429Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:29:44.040Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209277"}
+{"level":"info","ts":"2026-09-19T10:29:44.040Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209251 -> 442209277"}
+{"level":"info","ts":"2026-09-19T10:29:49.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209303"}
+{"level":"info","ts":"2026-09-19T10:29:49.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209277 -> 442209303"}
+{"level":"info","ts":"2026-09-19T10:29:54.042Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209331"}
+{"level":"info","ts":"2026-09-19T10:29:54.042Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209303 -> 442209331"}
+{"level":"info","ts":"2026-09-19T10:29:57.421Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:29:57.421Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:29:57.421Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:29:57.421Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:29:57.421Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:29:57.422Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:29:57.422Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:29:57.422Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:29:59.038Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209352"}
+{"level":"info","ts":"2026-09-19T10:29:59.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209331 -> 442209352"}
+{"level":"info","ts":"2026-09-19T10:30:04.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209378"}
+{"level":"info","ts":"2026-09-19T10:30:04.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209352 -> 442209378"}
+{"level":"info","ts":"2026-09-19T10:30:09.051Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209403"}
+{"level":"info","ts":"2026-09-19T10:30:09.052Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209378 -> 442209403"}
+{"level":"info","ts":"2026-09-19T10:30:12.421Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:30:12.421Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:30:12.422Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:30:12.422Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:30:12.422Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:30:12.422Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:30:12.422Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:30:12.422Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:30:14.038Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209434"}
+{"level":"info","ts":"2026-09-19T10:30:14.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209403 -> 442209434"}
+{"level":"info","ts":"2026-09-19T10:30:19.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209460"}
+{"level":"info","ts":"2026-09-19T10:30:19.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209434 -> 442209460"}
+{"level":"info","ts":"2026-09-19T10:30:20.496Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:30:20.496Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:30:20.497Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:30:20.497Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:30:20.497Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:30:20.497Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:30:20.497Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:30:20.497Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:30:24.039Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209475"}
+{"level":"info","ts":"2026-09-19T10:30:24.039Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209460 -> 442209475"}
+{"level":"info","ts":"2026-09-19T10:30:27.425Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:30:27.425Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:30:27.426Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:30:27.426Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:30:27.427Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:30:27.427Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:30:27.427Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:30:27.427Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:30:29.048Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209513"}
+{"level":"info","ts":"2026-09-19T10:30:29.048Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209475 -> 442209513"}
+{"level":"info","ts":"2026-09-19T10:30:34.038Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209539"}
+{"level":"info","ts":"2026-09-19T10:30:34.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209513 -> 442209539"}
+{"level":"info","ts":"2026-09-19T10:30:39.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209566"}
+{"level":"info","ts":"2026-09-19T10:30:39.041Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209539 -> 442209566"}
+{"level":"info","ts":"2026-09-19T10:30:42.421Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:30:42.421Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:30:42.422Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:30:42.422Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:30:42.423Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:30:42.423Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:30:42.423Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:30:42.423Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:30:44.038Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209592"}
+{"level":"info","ts":"2026-09-19T10:30:44.038Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209566 -> 442209592"}
+{"level":"info","ts":"2026-09-19T10:30:49.043Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209622"}
+{"level":"info","ts":"2026-09-19T10:30:49.043Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209592 -> 442209622"}
+{"level":"info","ts":"2026-09-19T10:30:54.042Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209649"}
+{"level":"info","ts":"2026-09-19T10:30:54.042Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209622 -> 442209649"}
+{"level":"info","ts":"2026-09-19T10:30:57.441Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:30:57.441Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:30:57.444Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:30:57.444Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:30:57.445Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:30:57.445Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:30:57.445Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:30:57.445Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}
+{"level":"info","ts":"2026-09-19T10:30:59.037Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209669"}
+{"level":"info","ts":"2026-09-19T10:30:59.037Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209649 -> 442209669"}
+{"level":"info","ts":"2026-09-19T10:31:04.041Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209669"}
+{"level":"info","ts":"2026-09-19T10:31:04.041Z","caller":"solana-exporter/slots.go:207","msg":"finalized slot number has not advanced from 442209669, skipping"}
+{"level":"info","ts":"2026-09-19T10:31:09.042Z","caller":"solana-exporter/slots.go:199","msg":"Current slot: 442209672"}
+{"level":"info","ts":"2026-09-19T10:31:09.042Z","caller":"solana-exporter/slots.go:347","msg":"Moving watermark 442209669 -> 442209672"}
+{"level":"info","ts":"2026-09-19T10:31:12.425Z","caller":"solana-exporter/collector.go:352","msg":"========== BEGIN COLLECTION =========="}
+{"level":"info","ts":"2026-09-19T10:31:12.425Z","caller":"solana-exporter/collector.go:330","msg":"Collecting health..."}
+{"level":"info","ts":"2026-09-19T10:31:12.427Z","caller":"solana-exporter/collector.go:348","msg":"Health collected."}
+{"level":"info","ts":"2026-09-19T10:31:12.427Z","caller":"solana-exporter/collector.go:240","msg":"Collecting version..."}
+{"level":"info","ts":"2026-09-19T10:31:12.427Z","caller":"solana-exporter/collector.go:249","msg":"Version collected."}
+{"level":"info","ts":"2026-09-19T10:31:12.427Z","caller":"solana-exporter/collector.go:253","msg":"Collecting identity..."}
+{"level":"info","ts":"2026-09-19T10:31:12.428Z","caller":"solana-exporter/collector.go:271","msg":"Identity collected."}
+{"level":"info","ts":"2026-09-19T10:31:12.428Z","caller":"solana-exporter/collector.go:364","msg":"=========== END COLLECTION ==========="}

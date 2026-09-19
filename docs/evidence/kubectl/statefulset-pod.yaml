@@ -1,0 +1,330 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    checksum/flags: 1dd12233a88942299ce3f3de0e3d6a4e7517e8244bea32afa4d71b2ace1c8d63
+  creationTimestamp: "2026-09-19T10:23:43Z"
+  generateName: solana-solana-node-
+  generation: 1
+  labels:
+    app.kubernetes.io/instance: solana
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: solana-node
+    app.kubernetes.io/version: 4.2.2
+    apps.kubernetes.io/pod-index: "0"
+    controller-revision-hash: solana-solana-node-764796f656
+    helm.sh/chart: solana-node-0.1.0
+    solana.io/mode: follower
+    statefulset.kubernetes.io/pod-name: solana-solana-node-0
+  name: solana-solana-node-0
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: StatefulSet
+    name: solana-solana-node
+    uid: d540218f-a63c-4aa5-9914-e8f81e2923cb
+  resourceVersion: "8409"
+  uid: dfc673bb-7198-4816-93da-960d049b7eb0
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/instance: solana
+            app.kubernetes.io/name: solana-node
+        topologyKey: kubernetes.io/hostname
+  containers:
+  - command:
+    - /bin/bash
+    - /flags/run.sh
+    image: ghcr.io/marcjazz/agave:4.2.2
+    imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - agave-validator
+          - --ledger
+          - /data/ledger
+          - exit
+          - --force
+          - --skip-health-check
+          - --skip-new-snapshot-check
+    name: validator
+    ports:
+    - containerPort: 8899
+      hostPort: 8899
+      name: rpc
+      protocol: TCP
+    - containerPort: 8000
+      hostPort: 8000
+      name: gossip
+      protocol: UDP
+    readinessProbe:
+      exec:
+        command:
+        - /bin/bash
+        - /probes/readiness.sh
+      failureThreshold: 2
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    resources:
+      limits:
+        memory: 9Gi
+      requests:
+        cpu: "4"
+        memory: 5Gi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    startupProbe:
+      exec:
+        command:
+        - /bin/bash
+        - /probes/startup.sh
+      failureThreshold: 720
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /data
+      name: data
+    - mountPath: /flags
+      name: flags
+    - mountPath: /probes
+      name: probes
+    - mountPath: /keys
+      name: keys
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-d9n6t
+      readOnly: true
+  - args:
+    - -rpc-url
+    - http://127.0.0.1:8899
+    - -light-mode
+    - -listen-address
+    - 0.0.0.0:8080
+    - -slot-pace
+    - "5"
+    image: ghcr.io/asymmetric-research/solana-exporter:v3.1.0
+    imagePullPolicy: IfNotPresent
+    name: exporter
+    ports:
+    - containerPort: 8080
+      hostPort: 8080
+      name: metrics
+      protocol: TCP
+    resources:
+      limits:
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-d9n6t
+      readOnly: true
+  dnsPolicy: ClusterFirstWithHostNet
+  enableServiceLinks: true
+  hostNetwork: true
+  hostname: solana-solana-node-0
+  nodeName: solana-dev-control-plane
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext:
+    fsGroup: 10001
+    fsGroupChangePolicy: OnRootMismatch
+    runAsGroup: 10001
+    runAsUser: 10001
+    seccompProfile:
+      type: Unconfined
+  serviceAccount: default
+  serviceAccountName: default
+  subdomain: solana-solana-node-headless
+  terminationGracePeriodSeconds: 120
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: data-solana-solana-node-0
+  - configMap:
+      defaultMode: 493
+      name: solana-solana-node-flags
+    name: flags
+  - configMap:
+      defaultMode: 493
+      items:
+      - key: readiness.sh
+        path: readiness.sh
+      - key: startup.sh
+        path: startup.sh
+      name: solana-solana-node-flags
+    name: probes
+  - name: keys
+    secret:
+      defaultMode: 288
+      secretName: solana-solana-node-identity
+  - name: kube-api-access-d9n6t
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+status:
+  allocatedResources:
+    cpu: 4050m
+    memory: 5184Mi
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2026-09-19T10:23:43Z"
+    observedGeneration: 1
+    status: "True"
+    type: PodReadyToStartContainers
+  - lastProbeTime: null
+    lastTransitionTime: "2026-09-19T10:23:43Z"
+    observedGeneration: 1
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2026-09-19T10:27:34Z"
+    observedGeneration: 1
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2026-09-19T10:27:34Z"
+    observedGeneration: 1
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2026-09-19T10:23:43Z"
+    observedGeneration: 1
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - allocatedResources:
+      cpu: 50m
+      memory: 64Mi
+    containerID: containerd://f99d69e3c3d1677c734353532b8d5189b4c3d68bd174a0fa7f6896ccd9760194
+    image: ghcr.io/asymmetric-research/solana-exporter:v3.1.0
+    imageID: ghcr.io/asymmetric-research/solana-exporter@sha256:e1b5624cfcc553ca5b5abb5c2178cd263df500a3331e91f373754e5585d2d536
+    lastState: {}
+    name: exporter
+    ready: true
+    resources:
+      limits:
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2026-09-19T10:23:44Z"
+    user:
+      linux:
+        gid: 10001
+        supplementalGroups:
+        - 10001
+        uid: 10001
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-d9n6t
+      readOnly: true
+      recursiveReadOnly: Disabled
+  - allocatedResources:
+      cpu: "4"
+      memory: 5Gi
+    containerID: containerd://f09ac25370cfafab6dfcc62d0612bde42f246e3193394c0077d25b50581a04f4
+    image: ghcr.io/marcjazz/agave:4.2.2
+    imageID: ghcr.io/marcjazz/agave@sha256:6edec5f3d649d77f10f32c363624badad5cff66203e15d6eed0dc3d56dfdbf5e
+    lastState: {}
+    name: validator
+    ready: true
+    resources:
+      limits:
+        memory: 9Gi
+      requests:
+        cpu: "4"
+        memory: 5Gi
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2026-09-19T10:23:43Z"
+    user:
+      linux:
+        gid: 10001
+        supplementalGroups:
+        - 10001
+        uid: 10001
+    volumeMounts:
+    - mountPath: /data
+      name: data
+    - mountPath: /flags
+      name: flags
+    - mountPath: /probes
+      name: probes
+    - mountPath: /keys
+      name: keys
+      readOnly: true
+      recursiveReadOnly: Disabled
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-d9n6t
+      readOnly: true
+      recursiveReadOnly: Disabled
+  hostIP: 172.20.0.2
+  hostIPs:
+  - ip: 172.20.0.2
+  observedGeneration: 1
+  phase: Running
+  podIP: 172.20.0.2
+  podIPs:
+  - ip: 172.20.0.2
+  qosClass: Burstable
+  resources:
+    limits:
+      memory: 9344Mi
+    requests:
+      cpu: 4047m
+      memory: 5184Mi
+  startTime: "2026-09-19T10:23:43Z"

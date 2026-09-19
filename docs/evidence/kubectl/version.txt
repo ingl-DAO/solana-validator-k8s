@@ -1,0 +1,4 @@
+Client Version: v1.29.15
+Kustomize Version: v5.0.4-0.20230601165947-6ce0bf390ce3
+Server Version: v1.37.0
+WARNING: version difference between client (1.29) and server (1.37) exceeds the supported minor version skew of +/-1

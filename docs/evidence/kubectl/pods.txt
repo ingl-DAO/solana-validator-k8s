@@ -1,0 +1,17 @@
+NAMESPACE            NAME                                                       READY   STATUS    RESTARTS   AGE     IP            NODE                       NOMINATED NODE   READINESS GATES
+default              solana-solana-node-0                                       2/2     Running   0          6m36s   172.20.0.2    solana-dev-control-plane   <none>           <none>
+kube-system          coredns-559f6c778d-bhb95                                   1/1     Running   0          84m     10.244.0.2    solana-dev-control-plane   <none>           <none>
+kube-system          coredns-559f6c778d-qcvsz                                   1/1     Running   0          84m     10.244.0.5    solana-dev-control-plane   <none>           <none>
+kube-system          etcd-solana-dev-control-plane                              1/1     Running   0          84m     172.20.0.2    solana-dev-control-plane   <none>           <none>
+kube-system          kindnet-pmt9j                                              1/1     Running   0          84m     172.20.0.2    solana-dev-control-plane   <none>           <none>
+kube-system          kube-apiserver-solana-dev-control-plane                    1/1     Running   0          84m     172.20.0.2    solana-dev-control-plane   <none>           <none>
+kube-system          kube-controller-manager-solana-dev-control-plane           1/1     Running   0          84m     172.20.0.2    solana-dev-control-plane   <none>           <none>
+kube-system          kube-proxy-lrtmh                                           1/1     Running   0          84m     172.20.0.2    solana-dev-control-plane   <none>           <none>
+kube-system          kube-scheduler-solana-dev-control-plane                    1/1     Running   0          84m     172.20.0.2    solana-dev-control-plane   <none>           <none>
+local-path-storage   local-path-provisioner-75f7fc7dc5-47xfv                    1/1     Running   0          84m     10.244.0.4    solana-dev-control-plane   <none>           <none>
+monitoring           alertmanager-kube-prometheus-stack-alertmanager-0          2/2     Running   0          83m     10.244.0.9    solana-dev-control-plane   <none>           <none>
+monitoring           kube-prometheus-stack-grafana-d9778854b-gvqxm              3/3     Running   0          84m     10.244.0.7    solana-dev-control-plane   <none>           <none>
+monitoring           kube-prometheus-stack-kube-state-metrics-7b6cf85cf-lcst2   1/1     Running   0          84m     10.244.0.6    solana-dev-control-plane   <none>           <none>
+monitoring           kube-prometheus-stack-operator-945bf44dd-f224v             1/1     Running   0          84m     10.244.0.8    solana-dev-control-plane   <none>           <none>
+monitoring           kube-prometheus-stack-prometheus-node-exporter-rhlmg       1/1     Running   0          84m     172.20.0.2    solana-dev-control-plane   <none>           <none>
+monitoring           prometheus-kube-prometheus-stack-prometheus-0              2/2     Running   0          83m     10.244.0.10   solana-dev-control-plane   <none>           <none>

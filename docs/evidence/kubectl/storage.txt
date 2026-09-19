@@ -1,0 +1,8 @@
+NAME                                             PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+storageclass.storage.k8s.io/standard (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  84m
+
+NAME                                                        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                               STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+persistentvolume/pvc-9d3d285d-38e2-42ce-bb72-2220f68cabb9   80Gi       RWO            Delete           Bound    default/data-solana-solana-node-0   standard       <unset>                          83m
+
+NAMESPACE   NAME                                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+default     persistentvolumeclaim/data-solana-solana-node-0   Bound    pvc-9d3d285d-38e2-42ce-bb72-2220f68cabb9   80Gi       RWO            standard       <unset>                 83m

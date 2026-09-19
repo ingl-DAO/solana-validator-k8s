@@ -1,0 +1,3 @@
+15G	/data/ledger
+5.0G	/data/snapshots
+33G	/data/accounts

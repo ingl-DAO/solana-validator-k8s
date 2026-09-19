@@ -1,0 +1,15 @@
+--- getSlot
+{"jsonrpc":"2.0","result":442209465,"id":1}
+
+--- getMaxShredInsertSlot
+{"jsonrpc":"2.0","result":442209498,"id":1}
+
+--- getHealth
+{"jsonrpc":"2.0","result":"ok","id":1}
+
+--- getVersion
+{"jsonrpc":"2.0","result":{"feature-set":565236538,"solana-core":"4.2.2"},"id":1}
+
+--- getEpochInfo
+{"jsonrpc":"2.0","result":{"absoluteSlot":442209465,"blockHeight":393960539,"epoch":1036,"slotIndex":181209,"slotsInEpoch":432000,"transactionCount":700705663557},"id":1}
+
