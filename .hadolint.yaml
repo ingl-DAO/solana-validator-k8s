@@ -1,0 +1,12 @@
+# hadolint configuration
+ignored:
+  # DL3008 "pin versions in apt-get install".
+  #
+  # Rejected deliberately. Debian's archive keeps only the current version of each package, so a
+  # pinned `apt-get install curl=8.14.1-2` breaks the build the moment Debian publishes a point
+  # release — and it breaks it for everyone, permanently, with no security benefit. Reproducibility
+  # here comes from the pinned base image tag and the pinned Agave tarball SHA256, both of which
+  # are checked.
+  - DL3008
+
+failure-threshold: warning

@@ -12,6 +12,10 @@ ARG AGAVE_VERSION=4.2.2
 
 # ---------- Stage A: official release tarball (CLI + ledger tool) ----------
 FROM debian:trixie-slim AS tools
+# Without pipefail, a failed curl in `curl ... | tar` or `echo ... | sha256sum` is masked by the
+# exit status of the last command in the pipe — which would let a truncated download through the
+# checksum step unnoticed. (hadolint DL4006)
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG AGAVE_VERSION
 # Pin the checksum. Fill from: curl -sL <url> | sha256sum
 ARG TARBALL_SHA256=5fc8684f7430038105fde953d4308ed56addf627f658daa61709f345448247ee
@@ -56,6 +60,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 # ---------- Runtime ----------
 FROM debian:trixie-slim
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG AGAVE_VERSION
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl jq bzip2 zstd libssl3 bash \

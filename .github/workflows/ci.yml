@@ -119,14 +119,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Custom policies live in policies/ and need its __init__.py to load — without it checkov
-      # skips the directory and reports success having run none of them.
+      # TWO silent-failure traps here, both of which report success while running nothing:
+      #   - the input is external_checks_dirS (plural). The singular is accepted, warned about in
+      #     a line nobody reads, and ignored. Symptom: 16 checks instead of 37.
+      #   - policies/ needs an __init__.py or checkov skips the directory entirely.
+      # If this number drops back toward 16, the custom policies have stopped running.
       - name: Checkov
         uses: bridgecrewio/checkov-action@master
         with:
           directory: terraform
           framework: terraform
-          external_checks_dir: policies
+          external_checks_dirs: policies
 
       - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@v0.36.0
