@@ -70,5 +70,17 @@ data:
 {{- end }}
       --no-wait-for-vote-to-start-leader
 {{- end }}
+  startup.sh: |
+    #!/usr/bin/env bash
+    # "Has RPC finished booting?" — any JSON-RPC answer counts; the value is irrelevant.
+    #
+    # Deliberately NOT a tcpSocket probe: kubelet dials the pod IP (the node IP under
+    # hostNetwork) while RPC is bound to 127.0.0.1, so tcpSocket is refused forever even on a
+    # fully synced node. exec runs inside the container and can reach loopback.
+    set -euo pipefail
+    curl -sf -m 4 -o /dev/null -X POST \
+      -H 'Content-Type: application/json' \
+      -d '{"jsonrpc":"2.0","id":1,"method":"getSlot"}' \
+      http://127.0.0.1:{{ .Values.ports.rpc }}
   readiness.sh: |
 {{ include "solana-node.readiness" . | indent 4 }}

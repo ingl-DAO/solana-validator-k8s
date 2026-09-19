@@ -82,9 +82,10 @@ spec:
 {{- end }}
         resources: {{- toYaml .Values.resources | nindent 10 }}
         startupProbe:
-          # JSON-RPC only binds AFTER snapshot fetch, unpack and ledger load, so a plain TCP
-          # connect is the clean "finished booting" signal. 720 * 10s = 2h of grace.
-          tcpSocket: { port: {{ .Values.ports.rpc }} }
+          # See configmap-flags.yaml startup.sh for why this is exec and not tcpSocket.
+          # 720 * 10s = 2h, which is what snapshot fetch + index build + replay need.
+          exec:
+            command: ["/bin/bash", "/probes/startup.sh"]
           periodSeconds: 10
           failureThreshold: {{ if eq .Values.mode "test-validator" }}30{{ else }}720{{ end }}
         readinessProbe:
@@ -145,7 +146,9 @@ spec:
       - name: probes
         configMap:
           name: {{ include "solana-node.fullname" . }}-flags
-          items: [{ key: readiness.sh, path: readiness.sh }]
+          items:
+          - { key: readiness.sh, path: readiness.sh }
+          - { key: startup.sh, path: startup.sh }
           defaultMode: 0755
 {{- if eq .Values.mode "follower" }}
       - name: keys
