@@ -110,6 +110,22 @@ validator:
   # almost nothing, so it buys nothing here and costs two powerful capabilities. Disabled.
   # To enable it, set this false AND add the capabilities under podSecurity.capabilities.add.
   disableXdp: true
+
+  # Snapshot download pacing.
+  #
+  # Agave aborts a snapshot download whose throughput falls below minDownloadSpeedBytes and
+  # retries against another peer, giving up entirely after maxDownloadAborts attempts.
+  # The DEFAULTS ARE 10 MB/s AND 5 ATTEMPTS.
+  #
+  # That pairing is tuned for a mainnet validator, where a slow fetch is genuinely dangerous: the
+  # longer the download, the more slots to replay afterwards, and below some speed you never
+  # converge because you replay slower than the chain advances. Failing fast is correct there.
+  #
+  # It is wrong for a non-voting testnet follower on a domestic connection. 10 MB/s is often
+  # simply unattainable, so the node burns all 5 attempts and dies having downloaded gigabytes,
+  # with the real cause buried in a WARN line. Observed here: 361 KB/s, 28x below the floor.
+  minDownloadSpeedBytes: 131072   # 128 KB/s — slow, but it will finish
+  maxDownloadAborts: 30
   extraFlags: []
 
 resources:

@@ -59,6 +59,8 @@ data:
       --wal-recovery-mode skip_any_corrupted_record \
       --limit-ledger-size {{ .Values.validator.limitLedgerSize | int64 }} \
       --maximum-local-snapshot-age {{ .Values.validator.maximumLocalSnapshotAge | int64 }} \
+      --minimal-snapshot-download-speed {{ .Values.validator.minDownloadSpeedBytes | int64 }} \
+      --maximum-snapshot-download-abort {{ .Values.validator.maxDownloadAborts | int64 }} \
       --accounts-index-limit {{ .Values.validator.accountsIndexLimit }} \
 {{- if eq .Values.advertisedAddress.strategy "static" }}
       --advertised-ip {{ required "advertisedAddress.staticIp required when strategy=static" .Values.advertisedAddress.staticIp }} \
